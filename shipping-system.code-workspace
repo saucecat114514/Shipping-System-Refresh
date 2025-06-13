@@ -1,0 +1,47 @@
+{
+  "folders": [
+    {
+      "name": "Frontend",
+      "path": "./frontend"
+    },
+    {
+      "name": "Backend", 
+      "path": "./backend"
+    },
+    {
+      "name": "Root",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "typescript.suggest.autoImports": true,
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "vue.codeActions.enabled": true,
+    "vue.complete.casing.tags": "kebab",
+    "vue.complete.casing.props": "camel",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "files.associations": {
+      "*.vue": "vue"
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/.git": true,
+      "**/target": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "Vue.volar",
+      "Vue.vscode-typescript-vue-plugin",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint"
+    ]
+  }
+} 

@@ -1,0 +1,38 @@
+{
+  "name": "shipping-system-refresh",
+  "version": "1.0.0",
+  "description": "航运管理系统 - 前后端分离项目",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "cd backend && mvn spring-boot:run",
+    "build": "npm run build --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "cd backend && mvn clean package",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && mvn clean install",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "lint": "npm run lint --prefix frontend",
+    "lint:fix": "npm run lint:fix --prefix frontend",
+    "preview": "npm run preview --prefix frontend"
+  },
+
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/shipping-system-refresh.git"
+  },
+  "keywords": [
+    "shipping",
+    "management",
+    "vue",
+    "spring-boot",
+    "typescript",
+    "java"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
