@@ -3,6 +3,9 @@ import HomeView from '../views/HomeView.vue'
 import Login from '@/views/Login.vue'
 import PortManagement from "@/views/Port/PortManagement.vue";
 import ShipManagement from "@/views/Ship/ShipManagement.vue";
+import OrderManagement from "@/views/Order/OrderManagement.vue";
+import VoyageManagement from "@/views/Voyage/VoyageManagement.vue";
+import RouteManagement from "@/views/Route/RouteManagement.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,6 +37,21 @@ const router = createRouter({
       path: "/Ship/ShipManagement",
       name: 'ship',
       component: ShipManagement,
+    },
+    {
+      path: "/Order/OrderManagement",
+      name: 'Order',
+      component: OrderManagement,
+    },
+    {
+      path: "/Voyage/VoyageManagement",
+      name: "Voyage",
+      component: VoyageManagement,
+    },
+    {
+      path: "/Route/RouteManagement",
+      name: "Route",
+      component: RouteManagement,
     }
   ],
 })
