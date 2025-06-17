@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.ShipMapper">
+
+    <!-- 船舶实体映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.Ship">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="type_cn" jdbcType="VARCHAR" property="typeCn" />
+        <result column="type_en" jdbcType="VARCHAR" property="typeEn" />
+        <result column="flag" jdbcType="VARCHAR" property="flag" />
+        <result column="mmsi" jdbcType="VARCHAR" property="mmsi" />
+        <result column="imo_number" jdbcType="VARCHAR" property="imoNumber" />
+        <result column="gross_tonnage" jdbcType="DECIMAL" property="grossTonnage" />
+        <result column="deadweight_tonnage" jdbcType="DECIMAL" property="deadweightTonnage" />
+        <result column="current_speed" jdbcType="DECIMAL" property="currentSpeed" />
+        <result column="current_heading" jdbcType="DECIMAL" property="currentHeading" />
+        <result column="current_longitude" jdbcType="DECIMAL" property="currentLongitude" />
+        <result column="current_latitude" jdbcType="DECIMAL" property="currentLatitude" />
+        <result column="status" jdbcType="TINYINT" property="status" />
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, name, type_cn, type_en, flag, mmsi, imo_number, gross_tonnage, deadweight_tonnage,
+        current_speed, current_heading, current_longitude, current_latitude, status, created_at, updated_at
+    </sql>
+
+    <!-- 插入船舶 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Ship" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ships (
+            name, type_cn, type_en, flag, mmsi, imo_number, gross_tonnage, deadweight_tonnage,
+            current_speed, current_heading, current_longitude, current_latitude, status, created_at, updated_at
+        ) VALUES (
+            #{name}, #{typeCn}, #{typeEn}, #{flag}, #{mmsi}, #{imoNumber}, #{grossTonnage}, #{deadweightTonnage},
+            #{currentSpeed}, #{currentHeading}, #{currentLongitude}, #{currentLatitude}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID删除船舶 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ships WHERE id = #{id}
+    </delete>
+
+    <!-- 更新船舶 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Ship">
+        UPDATE ships SET
+            name = #{name},
+            type_cn = #{typeCn},
+            type_en = #{typeEn},
+            flag = #{flag},
+            mmsi = #{mmsi},
+            imo_number = #{imoNumber},
+            gross_tonnage = #{grossTonnage},
+            deadweight_tonnage = #{deadweightTonnage},
+            current_speed = #{currentSpeed},
+            current_heading = #{currentHeading},
+            current_longitude = #{currentLongitude},
+            current_latitude = #{currentLatitude},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询船舶 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据MMSI查询船舶 -->
+    <select id="selectByMmsi" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE mmsi = #{mmsi}
+    </select>
+
+    <!-- 根据IMO编号查询船舶 -->
+    <select id="selectByImoNumber" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE imo_number = #{imoNumber}
+    </select>
+
+    <!-- 分页查询船舶列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.ShipQueryRequest" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND (type_cn LIKE CONCAT('%', #{type}, '%') OR type_en LIKE CONCAT('%', #{type}, '%'))
+            </if>
+            <if test="flag != null and flag != ''">
+                AND flag LIKE CONCAT('%', #{flag}, '%')
+            </if>
+            <if test="mmsi != null and mmsi != ''">
+                AND mmsi LIKE CONCAT('%', #{mmsi}, '%')
+            </if>
+            <if test="imoNumber != null and imoNumber != ''">
+                AND imo_number LIKE CONCAT('%', #{imoNumber}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询船舶总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.ShipQueryRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM ships
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND (type_cn LIKE CONCAT('%', #{type}, '%') OR type_en LIKE CONCAT('%', #{type}, '%'))
+            </if>
+            <if test="flag != null and flag != ''">
+                AND flag LIKE CONCAT('%', #{flag}, '%')
+            </if>
+            <if test="mmsi != null and mmsi != ''">
+                AND mmsi LIKE CONCAT('%', #{mmsi}, '%')
+            </if>
+            <if test="imoNumber != null and imoNumber != ''">
+                AND imo_number LIKE CONCAT('%', #{imoNumber}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有船舶 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        ORDER BY name
+    </select>
+
+    <!-- 检查MMSI是否存在 -->
+    <select id="existsByMmsi" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM ships
+        WHERE mmsi = #{mmsi}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 检查IMO编号是否存在 -->
+    <select id="existsByImoNumber" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM ships
+        WHERE imo_number = #{imoNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper> 

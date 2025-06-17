@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.RouteMapper">
+
+    <!-- 航线实体映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.Route">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="route_number" jdbcType="VARCHAR" property="routeNumber" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="origin_port_id" jdbcType="BIGINT" property="originPortId" />
+        <result column="destination_port_id" jdbcType="BIGINT" property="destinationPortId" />
+        <result column="distance" jdbcType="DECIMAL" property="distance" />
+        <result column="distance_nm" jdbcType="DECIMAL" property="distanceNm" />
+        <result column="estimated_duration" jdbcType="DECIMAL" property="estimatedDuration" />
+        <result column="status" jdbcType="TINYINT" property="status" />
+        <result column="description" jdbcType="LONGVARCHAR" property="description" />
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+    </resultMap>
+
+    <!-- 航线实体映射（包含港口信息） -->
+    <resultMap id="RouteWithPortsResultMap" type="com.shipping.model.entity.Route" extends="BaseResultMap">
+        <association property="originPort" javaType="com.shipping.model.entity.Port">
+            <id column="origin_port_id" property="id" />
+            <result column="origin_port_name_cn" property="nameCn" />
+            <result column="origin_port_name_en" property="nameEn" />
+            <result column="origin_port_code" property="code" />
+            <result column="origin_port_country" property="country" />
+        </association>
+        <association property="destinationPort" javaType="com.shipping.model.entity.Port">
+            <id column="destination_port_id" property="id" />
+            <result column="destination_port_name_cn" property="nameCn" />
+            <result column="destination_port_name_en" property="nameEn" />
+            <result column="destination_port_code" property="code" />
+            <result column="destination_port_country" property="country" />
+        </association>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, route_number, name, origin_port_id, destination_port_id, distance, distance_nm,
+        estimated_duration, status, description, created_at, updated_at
+    </sql>
+
+    <!-- 包含港口信息的列 -->
+    <sql id="With_Ports_Column_List">
+        r.id, r.route_number, r.name, r.origin_port_id, r.destination_port_id, r.distance, r.distance_nm,
+        r.estimated_duration, r.status, r.description, r.created_at, r.updated_at,
+        op.name_cn as origin_port_name_cn, op.name_en as origin_port_name_en, 
+        op.code as origin_port_code, op.country as origin_port_country,
+        dp.name_cn as destination_port_name_cn, dp.name_en as destination_port_name_en,
+        dp.code as destination_port_code, dp.country as destination_port_country
+    </sql>
+
+    <!-- 插入航线 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Route" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO routes (
+            route_number, name, origin_port_id, destination_port_id, distance, distance_nm,
+            estimated_duration, status, description, created_at, updated_at
+        ) VALUES (
+            #{routeNumber}, #{name}, #{originPortId}, #{destinationPortId}, #{distance}, #{distanceNm},
+            #{estimatedDuration}, #{status}, #{description}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID删除航线 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM routes WHERE id = #{id}
+    </delete>
+
+    <!-- 更新航线 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Route">
+        UPDATE routes SET
+            route_number = #{routeNumber},
+            name = #{name},
+            origin_port_id = #{originPortId},
+            destination_port_id = #{destinationPortId},
+            distance = #{distance},
+            distance_nm = #{distanceNm},
+            estimated_duration = #{estimatedDuration},
+            status = #{status},
+            description = #{description},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询航线 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据航线编号查询航线 -->
+    <select id="selectByRouteNumber" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE route_number = #{routeNumber}
+    </select>
+
+    <!-- 分页查询航线列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.RouteQueryRequest" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询航线总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.RouteQueryRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM routes
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有航线 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE status = 1
+        ORDER BY name
+    </select>
+
+    <!-- 检查航线编号是否存在 -->
+    <select id="existsByRouteNumber" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM routes
+        WHERE route_number = #{routeNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 查询包含港口信息的航线列表 -->
+    <select id="selectPageListWithPorts" parameterType="com.shipping.model.dto.RouteQueryRequest" resultMap="RouteWithPortsResultMap">
+        SELECT <include refid="With_Ports_Column_List" />
+        FROM routes r
+        LEFT JOIN ports op ON r.origin_port_id = op.id
+        LEFT JOIN ports dp ON r.destination_port_id = dp.id
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND r.route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND r.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND r.origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND r.destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND r.status = #{status}
+            </if>
+        </where>
+        ORDER BY r.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper> 
