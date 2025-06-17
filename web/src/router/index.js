@@ -1,41 +1,95 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 import Login from '@/views/Login.vue'
-import PortManagement from "@/views/Port/PortManagement.vue";
-import ShipManagement from "@/views/Ship/ShipManagement.vue";
+import SimpleTest from '@/views/SimpleTest.vue'
+import MainLayout from '@/layout/MainLayout.vue'
+import Dashboard from '@/views/Dashboard.vue'
+import PortList from '@/views/Port/PortList.vue'
+import PortMap from '@/views/Port/PortMap.vue'
+import TestPortAPI from '@/views/TestPortAPI.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
-      name: 'home',
-      component: HomeView,
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
-    },
-    {
       path: '/login',
       name: 'login',
-      component: Login,
+      component: Login
     },
     {
-      path: "/Port/PortManagement",
-      name: "port",
-      component: PortManagement,
+      path: '/test',
+      name: 'simpleTest',
+      component: SimpleTest
     },
     {
-      path: "/Ship/ShipManagement",
-      name: 'ship',
-      component: ShipManagement,
+      path: '/',
+      redirect: '/login'
+    },
+    {
+      path: '/dashboard',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'dashboard',
+          component: Dashboard
+        }
+      ]
+    },
+    {
+      path: '/ports',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'portList',
+          component: PortList
+        },
+        {
+          path: 'map',
+          name: 'portMap',
+          component: PortMap
+        }
+      ]
+    },
+    {
+      path: '/test-port',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'testPort',
+          component: TestPortAPI
+        }
+      ]
     }
   ],
+})
+
+// 路由守卫
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('token')
+  
+  // 允许访问的公开页面
+  const publicPages = ['/login', '/test']
+  
+  // 如果访问登录页面
+  if (to.path === '/login') {
+    if (token) {
+      next('/dashboard')
+    } else {
+      next()
+    }
+  } else if (publicPages.includes(to.path)) {
+    // 公开页面直接允许访问
+    next()
+  } else {
+    // 访问其他页面需要token
+    if (token) {
+      next()
+    } else {
+      next('/login')
+    }
+  }
 })
 
 export default router

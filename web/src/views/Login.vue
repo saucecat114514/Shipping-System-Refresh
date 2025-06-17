@@ -17,7 +17,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
@@ -40,7 +40,7 @@ const loginRules = {
 };
 
 const handleLogin = () => {
-  loginFormRef.value.validate(async (valid: boolean) => {
+  loginFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
         const response = await axios.post('http://localhost:8080/api/login', {
