@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.MapRouteMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.MapRoute">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="route_name" property="routeName" jdbcType="VARCHAR"/>
+        <result column="start_longitude" property="startLongitude" jdbcType="DECIMAL"/>
+        <result column="start_latitude" property="startLatitude" jdbcType="DECIMAL"/>
+        <result column="start_address" property="startAddress" jdbcType="VARCHAR"/>
+        <result column="end_longitude" property="endLongitude" jdbcType="DECIMAL"/>
+        <result column="end_latitude" property="endLatitude" jdbcType="DECIMAL"/>
+        <result column="end_address" property="endAddress" jdbcType="VARCHAR"/>
+        <result column="waypoints" property="waypoints" jdbcType="TEXT"/>
+        <result column="route_coordinates" property="routeCoordinates" jdbcType="TEXT"/>
+        <result column="distance" property="distance" jdbcType="DECIMAL"/>
+        <result column="estimated_duration" property="estimatedDuration" jdbcType="DECIMAL"/>
+        <result column="route_type" property="routeType" jdbcType="VARCHAR"/>
+        <result column="vehicle_type" property="vehicleType" jdbcType="VARCHAR"/>
+        <result column="ship_type" property="shipType" jdbcType="VARCHAR"/>
+        <result column="fuel_consumption" property="fuelConsumption" jdbcType="DECIMAL"/>
+        <result column="route_cost" property="routeCost" jdbcType="DECIMAL"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="created_by" property="createdBy" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, route_name, start_longitude, start_latitude, start_address,
+        end_longitude, end_latitude, end_address, waypoints, route_coordinates,
+        distance, estimated_duration, route_type, vehicle_type, ship_type,
+        fuel_consumption, route_cost, status, created_at, updated_at, created_by
+    </sql>
+
+    <!-- 插入路径 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.MapRoute" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO map_routes (
+            route_name, start_longitude, start_latitude, start_address,
+            end_longitude, end_latitude, end_address, waypoints, route_coordinates,
+            distance, estimated_duration, route_type, vehicle_type, ship_type,
+            fuel_consumption, route_cost, status, created_at, updated_at, created_by
+        ) VALUES (
+            #{routeName}, #{startLongitude}, #{startLatitude}, #{startAddress},
+            #{endLongitude}, #{endLatitude}, #{endAddress}, #{waypoints}, #{routeCoordinates},
+            #{distance}, #{estimatedDuration}, #{routeType}, #{vehicleType}, #{shipType},
+            #{fuelConsumption}, #{routeCost}, #{status}, #{createdAt}, #{updatedAt}, #{createdBy}
+        )
+    </insert>
+
+    <!-- 更新路径 -->
+    <update id="update" parameterType="com.shipping.model.entity.MapRoute">
+        UPDATE map_routes
+        SET route_name = #{routeName},
+            start_longitude = #{startLongitude},
+            start_latitude = #{startLatitude},
+            start_address = #{startAddress},
+            end_longitude = #{endLongitude},
+            end_latitude = #{endLatitude},
+            end_address = #{endAddress},
+            waypoints = #{waypoints},
+            route_coordinates = #{routeCoordinates},
+            distance = #{distance},
+            estimated_duration = #{estimatedDuration},
+            route_type = #{routeType},
+            vehicle_type = #{vehicleType},
+            ship_type = #{shipType},
+            fuel_consumption = #{fuelConsumption},
+            route_cost = #{routeCost},
+            status = #{status},
+            updated_at = #{updatedAt},
+            created_by = #{createdBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除路径 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM map_routes WHERE id = #{id}
+    </delete>
+
+</mapper> 

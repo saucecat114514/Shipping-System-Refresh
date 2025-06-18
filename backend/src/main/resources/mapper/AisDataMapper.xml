@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.AisDataMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.AisData">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="mmsi" property="mmsi" jdbcType="VARCHAR"/>
+        <result column="ship_id" property="shipId" jdbcType="BIGINT"/>
+        <result column="longitude" property="longitude" jdbcType="DECIMAL"/>
+        <result column="latitude" property="latitude" jdbcType="DECIMAL"/>
+        <result column="speed" property="speed" jdbcType="DECIMAL"/>
+        <result column="heading" property="heading" jdbcType="DECIMAL"/>
+        <result column="timestamp" property="timestamp" jdbcType="TIMESTAMP"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at
+    </sql>
+
+    <!-- 插入AIS数据 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.AisData" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ais_data (mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at)
+        VALUES (#{mmsi}, #{shipId}, #{longitude}, #{latitude}, #{speed}, #{heading}, #{timestamp}, #{createdAt})
+    </insert>
+
+    <!-- 批量插入AIS数据 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO ais_data (mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.mmsi}, #{item.shipId}, #{item.longitude}, #{item.latitude}, 
+             #{item.speed}, #{item.heading}, #{item.timestamp}, #{item.createdAt})
+        </foreach>
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE id = #{id}
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        <where>
+            <if test="query.mmsi != null and query.mmsi != ''">
+                AND mmsi = #{query.mmsi}
+            </if>
+            <if test="query.shipId != null">
+                AND ship_id = #{query.shipId}
+            </if>
+            <if test="query.startTime != null">
+                AND timestamp >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND timestamp <= #{query.endTime}
+            </if>
+            <if test="query.minLongitude != null">
+                AND longitude >= #{query.minLongitude}
+            </if>
+            <if test="query.maxLongitude != null">
+                AND longitude <= #{query.maxLongitude}
+            </if>
+            <if test="query.minLatitude != null">
+                AND latitude >= #{query.minLatitude}
+            </if>
+            <if test="query.maxLatitude != null">
+                AND latitude <= #{query.maxLatitude}
+            </if>
+            <if test="query.minSpeed != null">
+                AND speed >= #{query.minSpeed}
+            </if>
+            <if test="query.maxSpeed != null">
+                AND speed <= #{query.maxSpeed}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                timestamp
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'ASC'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM ais_data
+        <where>
+            <if test="query.mmsi != null and query.mmsi != ''">
+                AND mmsi = #{query.mmsi}
+            </if>
+            <if test="query.shipId != null">
+                AND ship_id = #{query.shipId}
+            </if>
+            <if test="query.startTime != null">
+                AND timestamp >= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND timestamp <= #{query.endTime}
+            </if>
+            <if test="query.minLongitude != null">
+                AND longitude >= #{query.minLongitude}
+            </if>
+            <if test="query.maxLongitude != null">
+                AND longitude <= #{query.maxLongitude}
+            </if>
+            <if test="query.minLatitude != null">
+                AND latitude >= #{query.minLatitude}
+            </if>
+            <if test="query.maxLatitude != null">
+                AND latitude <= #{query.maxLatitude}
+            </if>
+            <if test="query.minSpeed != null">
+                AND speed >= #{query.minSpeed}
+            </if>
+            <if test="query.maxSpeed != null">
+                AND speed <= #{query.maxSpeed}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据MMSI查询最新数据 -->
+    <select id="selectLatestByMmsi" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE mmsi = #{mmsi}
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据船舶ID查询最新数据 -->
+    <select id="selectLatestByShipId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE ship_id = #{shipId}
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据船舶ID查询轨迹数据 -->
+    <select id="selectTrackByShipId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE ship_id = #{shipId}
+        <if test="startTime != null and startTime != ''">
+            AND timestamp >= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND timestamp <= #{endTime}
+        </if>
+        ORDER BY timestamp ASC
+    </select>
+
+    <!-- 根据MMSI查询轨迹数据 -->
+    <select id="selectTrackByMmsi" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE mmsi = #{mmsi}
+        <if test="startTime != null and startTime != ''">
+            AND timestamp >= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND timestamp <= #{endTime}
+        </if>
+        ORDER BY timestamp ASC
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ais_data WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM ais_data WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 清理过期数据 -->
+    <delete id="deleteExpiredData" parameterType="java.lang.String">
+        DELETE FROM ais_data WHERE timestamp < #{beforeTime}
+    </delete>
+
+</mapper> 

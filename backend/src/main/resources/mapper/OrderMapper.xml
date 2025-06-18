@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shipping.mapper.OrderMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="OrderResultMap" type="com.shipping.model.entity.Order">
+        <id column="id" property="id"/>
+        <result column="order_number" property="orderNumber"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="voyage_id" property="voyageId"/>
+        <result column="cargo_name" property="cargoName"/>
+        <result column="cargo_type" property="cargoType"/>
+        <result column="cargo_weight" property="cargoWeight"/>
+        <result column="cargo_volume" property="cargoVolume"/>
+        <result column="is_urgent" property="isUrgent"/>
+        <result column="base_price" property="basePrice"/>
+        <result column="additional_fees" property="additionalFees"/>
+        <result column="total_price" property="totalPrice"/>
+        <result column="status" property="status"/>
+        <result column="notes" property="notes"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 包含关联信息的结果映射 -->
+    <resultMap id="OrderWithDetailsResultMap" type="com.shipping.model.entity.Order" extends="OrderResultMap">
+        <association property="customer" javaType="com.shipping.model.entity.User">
+            <id column="customer_id" property="id"/>
+            <result column="customer_username" property="username"/>
+            <result column="customer_email" property="email"/>
+            <result column="customer_role" property="role"/>
+        </association>
+        <association property="voyage" javaType="com.shipping.model.entity.Voyage">
+            <id column="voyage_id" property="id"/>
+            <result column="voyage_number" property="voyageNumber"/>
+            <result column="departure_date" property="departureDate"/>
+            <result column="arrival_date" property="arrivalDate"/>
+            <result column="voyage_status" property="status"/>
+        </association>
+    </resultMap>
+
+    <!-- 插入订单 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (
+            order_number, customer_id, voyage_id, cargo_name, cargo_type,
+            cargo_weight, cargo_volume, is_urgent, base_price, additional_fees,
+            total_price, status, notes, created_at, updated_at
+        ) VALUES (
+            #{orderNumber}, #{customerId}, #{voyageId}, #{cargoName}, #{cargoType},
+            #{cargoWeight}, #{cargoVolume}, #{isUrgent}, #{basePrice}, #{additionalFees},
+            #{totalPrice}, #{status}, #{notes}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 根据ID删除订单 -->
+    <delete id="deleteById" parameterType="Long">
+        DELETE FROM orders WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新订单 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Order">
+        UPDATE orders SET
+            order_number = #{orderNumber},
+            customer_id = #{customerId},
+            voyage_id = #{voyageId},
+            cargo_name = #{cargoName},
+            cargo_type = #{cargoType},
+            cargo_weight = #{cargoWeight},
+            cargo_volume = #{cargoVolume},
+            is_urgent = #{isUrgent},
+            base_price = #{basePrice},
+            additional_fees = #{additionalFees},
+            total_price = #{totalPrice},
+            status = #{status},
+            notes = #{notes},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询订单 -->
+    <select id="selectById" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders WHERE id = #{id}
+    </select>
+
+    <!-- 根据订单编号查询订单 -->
+    <select id="selectByOrderNumber" parameterType="String" resultMap="OrderResultMap">
+        SELECT * FROM orders WHERE order_number = #{orderNumber}
+    </select>
+
+    <!-- 检查订单编号是否存在 -->
+    <select id="existsByOrderNumber" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM orders 
+        WHERE order_number = #{orderNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 分页查询订单列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.OrderQueryRequest" resultMap="OrderResultMap">
+        SELECT * FROM orders
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 分页查询订单列表（包含关联信息） -->
+    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.OrderQueryRequest" resultMap="OrderWithDetailsResultMap">
+        SELECT 
+            o.*,
+            u.username as customer_username, u.email as customer_email, u.role as customer_role,
+            v.voyage_number, v.departure_date, v.arrival_date, v.status as voyage_status
+        FROM orders o
+        LEFT JOIN users u ON o.customer_id = u.id
+        LEFT JOIN voyages v ON o.voyage_id = v.id
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND o.order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND o.voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND o.cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND o.cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND o.status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND o.is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND o.created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND o.created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY o.created_at DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.OrderQueryRequest" resultType="long">
+        SELECT COUNT(*) FROM orders
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据客户ID查询订单列表 -->
+    <select id="selectByCustomerId" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE customer_id = #{customerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据航次ID查询订单列表 -->
+    <select id="selectByVoyageId" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE voyage_id = #{voyageId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE orders SET 
+            status = #{status}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分配航次给订单 -->
+    <update id="assignVoyage">
+        UPDATE orders SET 
+            voyage_id = #{voyageId}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新订单运价信息 -->
+    <update id="updatePricing">
+        UPDATE orders SET 
+            base_price = #{basePrice},
+            additional_fees = #{additionalFees},
+            total_price = #{totalPrice},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据状态统计订单数量 -->
+    <select id="countByStatus" parameterType="String" resultType="int">
+        SELECT COUNT(*) FROM orders WHERE status = #{status}
+    </select>
+
+    <!-- 获取客户的订单列表 -->
+    <select id="selectCustomerOrders" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE customer_id = #{customerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper> 

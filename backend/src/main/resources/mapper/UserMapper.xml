@@ -61,4 +61,94 @@
         DELETE FROM users WHERE id = #{id}
     </delete>
 
+    <!-- 分页查询用户 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users
+        <where>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.email != null and query.email != ''">
+                AND email LIKE CONCAT('%', #{query.email}, '%')
+            </if>
+            <if test="query.realName != null and query.realName != ''">
+                AND real_name LIKE CONCAT('%', #{query.realName}, '%')
+            </if>
+            <if test="query.role != null and query.role != ''">
+                AND role = #{query.role}
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone LIKE CONCAT('%', #{query.phone}, '%')
+            </if>
+            <if test="query.department != null and query.department != ''">
+                AND department LIKE CONCAT('%', #{query.department}, '%')
+            </if>
+            <if test="query.position != null and query.position != ''">
+                AND position LIKE CONCAT('%', #{query.position}, '%')
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                created_at
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'ASC'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询用户总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        <where>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.email != null and query.email != ''">
+                AND email LIKE CONCAT('%', #{query.email}, '%')
+            </if>
+            <if test="query.realName != null and query.realName != ''">
+                AND real_name LIKE CONCAT('%', #{query.realName}, '%')
+            </if>
+            <if test="query.role != null and query.role != ''">
+                AND role = #{query.role}
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone LIKE CONCAT('%', #{query.phone}, '%')
+            </if>
+            <if test="query.department != null and query.department != ''">
+                AND department LIKE CONCAT('%', #{query.department}, '%')
+            </if>
+            <if test="query.position != null and query.position != ''">
+                AND position LIKE CONCAT('%', #{query.position}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 批量删除用户 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM users WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
 </mapper> 

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shipping.mapper.VoyageMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="VoyageResultMap" type="com.shipping.model.entity.Voyage">
+        <id column="id" property="id"/>
+        <result column="voyage_number" property="voyageNumber"/>
+        <result column="route_id" property="routeId"/>
+        <result column="ship_id" property="shipId"/>
+        <result column="departure_date" property="departureDate"/>
+        <result column="arrival_date" property="arrivalDate"/>
+        <result column="actual_departure_date" property="actualDepartureDate"/>
+        <result column="actual_arrival_date" property="actualArrivalDate"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 插入航次 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Voyage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO voyages (
+            voyage_number, route_id, ship_id, departure_date, arrival_date,
+            actual_departure_date, actual_arrival_date, status, created_at, updated_at
+        ) VALUES (
+            #{voyageNumber}, #{routeId}, #{shipId}, #{departureDate}, #{arrivalDate},
+            #{actualDepartureDate}, #{actualArrivalDate}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 根据ID删除航次 -->
+    <delete id="deleteById" parameterType="Long">
+        DELETE FROM voyages WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新航次 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Voyage">
+        UPDATE voyages SET
+            voyage_number = #{voyageNumber},
+            route_id = #{routeId},
+            ship_id = #{shipId},
+            departure_date = #{departureDate},
+            arrival_date = #{arrivalDate},
+            actual_departure_date = #{actualDepartureDate},
+            actual_arrival_date = #{actualArrivalDate},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询航次 -->
+    <select id="selectById" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages WHERE id = #{id}
+    </select>
+
+    <!-- 根据航次编号查询航次 -->
+    <select id="selectByVoyageNumber" parameterType="String" resultMap="VoyageResultMap">
+        SELECT * FROM voyages WHERE voyage_number = #{voyageNumber}
+    </select>
+
+    <!-- 检查航次编号是否存在 -->
+    <select id="existsByVoyageNumber" resultType="boolean">
+        SELECT COUNT(1) > 0 FROM voyages 
+        WHERE voyage_number = #{voyageNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 分页查询航次列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageResultMap">
+        SELECT * FROM voyages
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND departure_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY departure_date DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 分页查询航次列表（包含关联信息） -->
+    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageResultMap">
+        SELECT v.* FROM voyages v
+        LEFT JOIN routes r ON v.route_id = r.id
+        LEFT JOIN ships s ON v.ship_id = s.id
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND v.voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND v.route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND v.ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND v.status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND v.departure_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND v.departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY v.departure_date DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultType="long">
+        SELECT COUNT(*) FROM voyages
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND departure_date >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 获取所有启用的航次 -->
+    <select id="selectAllActive" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE status IN ('PLANNED', 'IN_PROGRESS')
+        ORDER BY departure_date ASC
+    </select>
+
+    <!-- 根据航线ID查询航次列表 -->
+    <select id="selectByRouteId" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE route_id = #{routeId}
+        ORDER BY departure_date DESC
+    </select>
+
+    <!-- 根据船舶ID查询航次列表 -->
+    <select id="selectByShipId" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE ship_id = #{shipId}
+        ORDER BY departure_date DESC
+    </select>
+
+    <!-- 更新航次状态 -->
+    <update id="updateStatus">
+        UPDATE voyages SET 
+            status = #{status}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper> 

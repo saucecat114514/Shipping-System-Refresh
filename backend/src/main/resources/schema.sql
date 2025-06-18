@@ -13,11 +13,16 @@ CREATE TABLE users (
     real_name VARCHAR(50) NOT NULL COMMENT '真实姓名',
     role ENUM('ADMIN', 'DISPATCHER', 'CUSTOMER') NOT NULL DEFAULT 'CUSTOMER' COMMENT '角色',
     status TINYINT NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    phone VARCHAR(20) COMMENT '电话号码',
+    department VARCHAR(100) COMMENT '部门',
+    position VARCHAR(100) COMMENT '职位',
+    remark TEXT COMMENT '备注',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_username (username),
     INDEX idx_email (email),
-    INDEX idx_role (role)
+    INDEX idx_role (role),
+    INDEX idx_phone (phone)
 ) COMMENT '用户表';
 
 -- 港口表
@@ -160,4 +165,87 @@ CREATE TABLE system_config (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_config_key (config_key)
-) COMMENT '系统配置表'; 
+) COMMENT '系统配置表';
+
+-- 地图路径表
+CREATE TABLE map_routes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '路径ID',
+    route_name VARCHAR(100) COMMENT '路径名称',
+    start_longitude DECIMAL(10, 7) NOT NULL COMMENT '起点经度',
+    start_latitude DECIMAL(10, 7) NOT NULL COMMENT '起点纬度',
+    start_address VARCHAR(200) COMMENT '起点地址',
+    end_longitude DECIMAL(10, 7) NOT NULL COMMENT '终点经度',
+    end_latitude DECIMAL(10, 7) NOT NULL COMMENT '终点纬度',
+    end_address VARCHAR(200) COMMENT '终点地址',
+    waypoints TEXT COMMENT '途经点(JSON格式)',
+    route_coordinates TEXT COMMENT '路径坐标(JSON格式)',
+    distance DECIMAL(10, 2) COMMENT '距离(公里)',
+    estimated_duration DECIMAL(8, 2) COMMENT '预计时间(小时)',
+    route_type VARCHAR(20) COMMENT '路径类型：fastest-最快，shortest-最短，economic-经济',
+    vehicle_type VARCHAR(20) COMMENT '车辆类型：car-汽车，truck-卡车，ship-船舶',
+    ship_type VARCHAR(20) COMMENT '船舶类型：container-集装箱，bulk-散货，tanker-油轮，general-杂货',
+    fuel_consumption DECIMAL(10, 2) COMMENT '燃料消耗(升)',
+    route_cost DECIMAL(10, 2) COMMENT '路径费用(元)',
+    status VARCHAR(20) DEFAULT 'CALCULATED' COMMENT '路径状态：CALCULATED-已计算，SAVED-已保存，OPTIMIZED-已优化',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    created_by VARCHAR(50) COMMENT '创建人',
+    INDEX idx_start_location (start_longitude, start_latitude),
+    INDEX idx_end_location (end_longitude, end_latitude),
+    INDEX idx_route_type (route_type),
+    INDEX idx_vehicle_type (vehicle_type),
+    INDEX idx_created_by (created_by),
+    INDEX idx_created_at (created_at)
+) COMMENT '地图路径表';
+
+-- 审计日志表
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(100) NOT NULL COMMENT '操作用户',
+    user_role VARCHAR(50) COMMENT '用户角色',
+    operation VARCHAR(50) NOT NULL COMMENT '操作类型',
+    module VARCHAR(100) NOT NULL COMMENT '操作模块',
+    method VARCHAR(255) COMMENT '操作方法',
+    request_url VARCHAR(500) COMMENT '请求URL',
+    request_method VARCHAR(20) COMMENT '请求方式',
+    request_params TEXT COMMENT '请求参数',
+    client_ip VARCHAR(100) COMMENT '客户端IP',
+    user_agent VARCHAR(500) COMMENT '用户代理',
+    result VARCHAR(20) DEFAULT 'SUCCESS' COMMENT '操作结果',
+    error_msg TEXT COMMENT '错误信息',
+    response_time BIGINT COMMENT '响应时间(毫秒)',
+    operation_time TIMESTAMP NOT NULL COMMENT '操作时间',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_username (username),
+    INDEX idx_operation (operation),
+    INDEX idx_module (module),
+    INDEX idx_operation_time (operation_time),
+    INDEX idx_result (result)
+) COMMENT='审计日志表';
+
+-- 批量导入记录表
+CREATE TABLE IF NOT EXISTS batch_import_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    import_id VARCHAR(100) UNIQUE NOT NULL COMMENT '导入ID',
+    import_type VARCHAR(50) NOT NULL COMMENT '导入类型',
+    file_name VARCHAR(255) NOT NULL COMMENT '文件名',
+    file_size BIGINT COMMENT '文件大小',
+    total_rows INTEGER DEFAULT 0 COMMENT '总行数',
+    success_rows INTEGER DEFAULT 0 COMMENT '成功行数',
+    failed_rows INTEGER DEFAULT 0 COMMENT '失败行数',
+    skipped_rows INTEGER DEFAULT 0 COMMENT '跳过行数',
+    status VARCHAR(50) DEFAULT 'PROCESSING' COMMENT '处理状态',
+    error_details TEXT COMMENT '错误详情JSON',
+    processing_time BIGINT COMMENT '处理时间(毫秒)',
+    start_time TIMESTAMP COMMENT '开始时间',
+    end_time TIMESTAMP COMMENT '结束时间',
+    username VARCHAR(100) NOT NULL COMMENT '操作用户',
+    remark VARCHAR(500) COMMENT '备注',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    INDEX idx_import_id (import_id),
+    INDEX idx_import_type (import_type),
+    INDEX idx_username (username),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) COMMENT='批量导入记录表'; 

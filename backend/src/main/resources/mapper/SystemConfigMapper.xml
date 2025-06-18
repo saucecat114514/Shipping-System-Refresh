@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.SystemConfigMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.SystemConfig">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="config_key" property="configKey" jdbcType="VARCHAR"/>
+        <result column="config_value" property="configValue" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, config_key, config_value, description, created_at, updated_at
+    </sql>
+
+    <!-- 插入系统配置 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.SystemConfig" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO system_config (config_key, config_value, description, created_at, updated_at)
+        VALUES (#{configKey}, #{configValue}, #{description}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 更新系统配置 -->
+    <update id="update" parameterType="com.shipping.model.entity.SystemConfig">
+        UPDATE system_config
+        SET config_key = #{configKey},
+            config_value = #{configValue},
+            description = #{description},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据配置键查询 -->
+    <select id="selectByKey" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        WHERE config_key = #{configKey}
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        <where>
+            <if test="query.configKey != null and query.configKey != ''">
+                AND config_key LIKE CONCAT('%', #{query.configKey}, '%')
+            </if>
+            <if test="query.configValue != null and query.configValue != ''">
+                AND config_value LIKE CONCAT('%', #{query.configValue}, '%')
+            </if>
+            <if test="query.description != null and query.description != ''">
+                AND description LIKE CONCAT('%', #{query.description}, '%')
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                config_key
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'DESC'">
+                DESC
+            </when>
+            <otherwise>
+                ASC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM system_config
+        <where>
+            <if test="query.configKey != null and query.configKey != ''">
+                AND config_key LIKE CONCAT('%', #{query.configKey}, '%')
+            </if>
+            <if test="query.configValue != null and query.configValue != ''">
+                AND config_value LIKE CONCAT('%', #{query.configValue}, '%')
+            </if>
+            <if test="query.description != null and query.description != ''">
+                AND description LIKE CONCAT('%', #{query.description}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有配置 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        ORDER BY config_key ASC
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM system_config WHERE id = #{id}
+    </delete>
+
+    <!-- 根据配置键删除 -->
+    <delete id="deleteByKey" parameterType="java.lang.String">
+        DELETE FROM system_config WHERE config_key = #{configKey}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM system_config WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据配置键更新配置值 -->
+    <update id="updateValueByKey">
+        UPDATE system_config
+        SET config_value = #{configValue},
+            updated_at = NOW()
+        WHERE config_key = #{configKey}
+    </update>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE system_config
+            SET config_value = #{item.configValue},
+                description = #{item.description},
+                updated_at = #{item.updatedAt}
+            WHERE config_key = #{item.configKey}
+        </foreach>
+    </update>
+
+</mapper> 
