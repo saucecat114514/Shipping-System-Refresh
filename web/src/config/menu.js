@@ -6,32 +6,45 @@ import {
   Van,
   Calendar,
   Document,
-  Setting
+  Setting,
+  User
 } from '@element-plus/icons-vue'
 
 export const menuItems = [
   {
     title: '仪表盘',
     icon: House,
-    path: '/'
-  },
-  {
-    title: '船舶管理',
-    icon: Ship,
-    children: [
-      {
-        title: '船舶追踪',
-        path: '/ships/tracking'
-      }
-    ]
+    path: '/dashboard'
   },
   {
     title: '港口管理',
     icon: Location,
     children: [
       {
+        title: '港口列表',
+        path: '/ports'
+      },
+      {
         title: '港口地图',
         path: '/ports/map'
+      }
+    ]
+  },
+  {
+    title: '船舶管理',
+    icon: Ship,
+    children: [
+      {
+        title: '船舶列表',
+        path: '/ships'
+      },
+      {
+        title: '船舶管理',
+        path: '/ships/management'
+      },
+      {
+        title: '船舶追踪',
+        path: '/ships/tracking'
       }
     ]
   },
@@ -76,5 +89,20 @@ export const menuItems = [
         path: '/orders/create'
       }
     ]
+  },
+  {
+    title: '用户管理',
+    icon: User,
+    path: '/users'
+  },
+  {
+    title: '系统配置',
+    icon: Setting,
+    path: '/config'
+  },
+  {
+    title: '系统测试',
+    icon: Setting,
+    path: '/system-test'
   }
 ] 

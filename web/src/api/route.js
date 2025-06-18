@@ -44,7 +44,7 @@ export function deleteRoute(id) {
 }
 
 // 计算航线距离
-export function calculateDistance(data) {
+export function calculateRouteDistance(data) {
   return request({
     url: '/routes/calculate-distance',
     method: 'post',

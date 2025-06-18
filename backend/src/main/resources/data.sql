@@ -1,12 +1,13 @@
 -- 航运管理系统初始测试数据
--- 注意：密码都是经过BCrypt加密的 "123456"
+-- 注意：为了方便测试，密码采用明文存储 "123456"
+-- 生产环境应该使用BCrypt加密
 
 -- 插入测试用户
 INSERT INTO users (username, password, email, real_name, role, status, created_at, updated_at) VALUES
-('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'admin@shipping.com', '系统管理员', 'ADMIN', 1, NOW(), NOW()),
-('dispatcher', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'dispatcher@shipping.com', '调度员', 'DISPATCHER', 1, NOW(), NOW()),
-('customer1', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'customer1@shipping.com', '客户一', 'CUSTOMER', 1, NOW(), NOW()),
-('customer2', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', 'customer2@shipping.com', '客户二', 'CUSTOMER', 1, NOW(), NOW());
+('admin', '123456', 'admin@shipping.com', '系统管理员', 'ADMIN', 1, NOW(), NOW()),
+('dispatcher', '123456', 'dispatcher@shipping.com', '调度员', 'DISPATCHER', 1, NOW(), NOW()),
+('customer1', '123456', 'customer1@shipping.com', '客户一', 'CUSTOMER', 1, NOW(), NOW()),
+('customer2', '123456', 'customer2@shipping.com', '客户二', 'CUSTOMER', 1, NOW(), NOW());
 
 -- 插入测试港口数据
 INSERT INTO ports (name_cn, name_en, code, country, longitude, latitude, created_at, updated_at) VALUES

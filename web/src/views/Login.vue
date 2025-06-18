@@ -17,6 +17,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
@@ -49,8 +50,9 @@ const handleLogin = () => {
         });
         const token = response.data.data.token;
         localStorage.setItem('token', token);
+        localStorage.setItem('userInfo', JSON.stringify(response.data.data));
         ElMessage.success('登录成功');
-        router.push('/home');
+        router.push('/dashboard');
       } catch (error) {
         ElMessage.error('用户名或密码错误');
       }

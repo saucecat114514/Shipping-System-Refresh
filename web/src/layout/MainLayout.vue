@@ -33,7 +33,8 @@
             <el-icon><Ship /></el-icon>
             <span>船舶管理</span>
           </template>
-          <el-menu-item index="/ships">船舶追踪</el-menu-item>
+          <el-menu-item index="/ships">船舶列表</el-menu-item>
+          <el-menu-item index="/ships/tracking">船舶追踪</el-menu-item>
         </el-sub-menu>
         
         <el-menu-item index="/routes">
@@ -132,7 +133,8 @@ const breadcrumbTitle = computed(() => {
     '/dashboard': '数据面板',
     '/ports': '港口列表',
     '/ports/map': '港口地图',
-    '/ships': '船舶追踪',
+    '/ships': '船舶列表',
+    '/ships/tracking': '船舶追踪',
     '/routes': '航线管理',
     '/voyages': '航次管理',
     '/orders': '订单管理',

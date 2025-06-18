@@ -1,5 +1,5 @@
 <template>
-  <div class="ship-list">
+  <div class="ship-management">
     <DataTable
       ref="dataTableRef"
       :columns="columns"
@@ -10,17 +10,17 @@
       @edit="handleEdit"
     >
       <!-- 自定义列插槽 -->
+      <template #tonnage="{ row }">
+        <div>
+          <div>总吨: {{ row.grossTonnage }}t</div>
+          <div>载重: {{ row.deadweightTonnage }}t</div>
+        </div>
+      </template>
+      
       <template #status="{ row }">
         <el-tag :type="getStatusType(row.status)">
           {{ getStatusText(row.status) }}
         </el-tag>
-      </template>
-      
-      <template #position="{ row }">
-        <span v-if="row.currentLongitude && row.currentLatitude">
-          {{ row.currentLongitude.toFixed(4) }}, {{ row.currentLatitude.toFixed(4) }}
-        </span>
-        <span v-else class="text-gray">未知位置</span>
       </template>
     </DataTable>
 
@@ -28,7 +28,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
-      width="700px"
+      width="800px"
       @close="resetForm"
     >
       <el-form
@@ -44,27 +44,33 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="船舶类型(中)" prop="typeCn">
-              <el-select v-model="form.typeCn" placeholder="请选择船舶类型" style="width: 100%">
-                <el-option label="集装箱船" value="集装箱船" />
-                <el-option label="散货船" value="散货船" />
-                <el-option label="油轮" value="油轮" />
-                <el-option label="客轮" value="客轮" />
-                <el-option label="货船" value="货船" />
-              </el-select>
+            <el-form-item label="船籍" prop="flag">
+              <el-input v-model="form.flag" placeholder="请输入船籍国家" />
             </el-form-item>
           </el-col>
         </el-row>
         
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="船舶类型(英)" prop="typeEn">
-              <el-input v-model="form.typeEn" placeholder="如: Container Ship" />
+            <el-form-item label="船舶类型(中)" prop="typeCn">
+              <el-select v-model="form.typeCn" placeholder="请选择船舶类型" style="width: 100%">
+                <el-option label="集装箱船" value="集装箱船" />
+                <el-option label="散货船" value="散货船" />
+                <el-option label="油轮" value="油轮" />
+                <el-option label="滚装船" value="滚装船" />
+                <el-option label="冷藏船" value="冷藏船" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="船旗国" prop="flag">
-              <el-input v-model="form.flag" placeholder="请输入船旗国" />
+            <el-form-item label="船舶类型(英)" prop="typeEn">
+              <el-select v-model="form.typeEn" placeholder="请选择船舶类型" style="width: 100%">
+                <el-option label="Container Ship" value="Container Ship" />
+                <el-option label="Bulk Carrier" value="Bulk Carrier" />
+                <el-option label="Oil Tanker" value="Oil Tanker" />
+                <el-option label="RoRo Ship" value="RoRo Ship" />
+                <el-option label="Reefer Ship" value="Reefer Ship" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -72,12 +78,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="MMSI" prop="mmsi">
-              <el-input v-model="form.mmsi" placeholder="海事移动业务标识" />
+              <el-input v-model="form.mmsi" placeholder="如: 413123456" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="IMO编号" prop="imoNumber">
-              <el-input v-model="form.imoNumber" placeholder="国际海事组织编号" />
+              <el-input v-model="form.imoNumber" placeholder="如: IMO1234567" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -88,9 +94,10 @@
               <el-input-number
                 v-model="form.grossTonnage"
                 :precision="2"
+                :step="1000"
                 :min="0"
                 style="width: 100%"
-                placeholder="总吨位"
+                placeholder="请输入总吨位"
               />
             </el-form-item>
           </el-col>
@@ -99,10 +106,24 @@
               <el-input-number
                 v-model="form.deadweightTonnage"
                 :precision="2"
+                :step="1000"
                 :min="0"
                 style="width: 100%"
-                placeholder="载重吨位"
+                placeholder="请输入载重吨位"
               />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="船舶状态" prop="status">
+              <el-select v-model="form.status" placeholder="请选择船舶状态" style="width: 100%">
+                <el-option label="停泊" value="0" />
+                <el-option label="航行中" value="1" />
+                <el-option label="锚泊" value="2" />
+                <el-option label="维修" value="3" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -127,13 +148,12 @@ import { getShipList, createShip, updateShip, deleteShip } from '@/api/ship'
 // 表格列配置
 const columns = [
   { prop: 'name', label: '船舶名称', minWidth: 120 },
-  { prop: 'typeCn', label: '船舶类型', width: 120 },
-  { prop: 'flag', label: '船旗国', width: 100 },
+  { prop: 'typeCn', label: '船舶类型', width: 100 },
+  { prop: 'flag', label: '船籍', width: 100 },
   { prop: 'mmsi', label: 'MMSI', width: 120 },
-  { prop: 'grossTonnage', label: '总吨位(GT)', width: 120 },
-  { prop: 'deadweightTonnage', label: '载重吨位(DWT)', width: 130 },
+  { prop: 'imoNumber', label: 'IMO编号', width: 120 },
+  { prop: 'tonnage', label: '吨位信息', width: 150, slot: 'tonnage' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'position', label: '当前位置', width: 150, slot: 'position' },
   { prop: 'createdAt', label: '创建时间', width: 160 }
 ]
 
@@ -154,8 +174,8 @@ const searchConfig = [
       { label: '集装箱船', value: '集装箱船' },
       { label: '散货船', value: '散货船' },
       { label: '油轮', value: '油轮' },
-      { label: '客轮', value: '客轮' },
-      { label: '货船', value: '货船' }
+      { label: '滚装船', value: '滚装船' },
+      { label: '冷藏船', value: '冷藏船' }
     ]
   },
   {
@@ -164,10 +184,10 @@ const searchConfig = [
     type: 'select',
     placeholder: '请选择状态',
     options: [
-      { label: '停泊', value: 0 },
-      { label: '航行中', value: 1 },
-      { label: '锚泊', value: 2 },
-      { label: '维修', value: 3 }
+      { label: '停泊', value: '0' },
+      { label: '航行中', value: '1' },
+      { label: '锚泊', value: '2' },
+      { label: '维修', value: '3' }
     ]
   }
 ]
@@ -188,7 +208,8 @@ const form = reactive({
   mmsi: '',
   imoNumber: '',
   grossTonnage: null,
-  deadweightTonnage: null
+  deadweightTonnage: null,
+  status: '0'
 })
 
 // 表单验证规则
@@ -197,48 +218,54 @@ const rules = {
     { required: true, message: '请输入船舶名称', trigger: 'blur' }
   ],
   typeCn: [
-    { required: true, message: '请选择船舶类型', trigger: 'change' }
+    { required: true, message: '请选择船舶类型(中)', trigger: 'change' }
   ],
   typeEn: [
-    { required: true, message: '请输入英文类型', trigger: 'blur' }
+    { required: true, message: '请选择船舶类型(英)', trigger: 'change' }
   ],
   flag: [
-    { required: true, message: '请输入船旗国', trigger: 'blur' }
+    { required: true, message: '请输入船籍', trigger: 'blur' }
   ],
   mmsi: [
     { required: true, message: '请输入MMSI', trigger: 'blur' },
-    { pattern: /^\d{9}$/, message: 'MMSI应为9位数字', trigger: 'blur' }
+    { pattern: /^\d{9}$/, message: 'MMSI格式为9位数字', trigger: 'blur' }
   ],
   imoNumber: [
-    { required: true, message: '请输入IMO编号', trigger: 'blur' }
+    { required: true, message: '请输入IMO编号', trigger: 'blur' },
+    { pattern: /^IMO\d{7}$/, message: 'IMO编号格式为IMO+7位数字', trigger: 'blur' }
   ],
   grossTonnage: [
-    { required: true, message: '请输入总吨位', trigger: 'blur' }
+    { required: true, message: '请输入总吨位', trigger: 'blur' },
+    { type: 'number', message: '总吨位必须是数字', trigger: 'blur' }
   ],
   deadweightTonnage: [
-    { required: true, message: '请输入载重吨位', trigger: 'blur' }
+    { required: true, message: '请输入载重吨位', trigger: 'blur' },
+    { type: 'number', message: '载重吨位必须是数字', trigger: 'blur' }
+  ],
+  status: [
+    { required: true, message: '请选择船舶状态', trigger: 'change' }
   ]
 }
 
-// 状态处理函数
+// 状态相关方法
 const getStatusType = (status) => {
-  const typeMap = {
-    0: 'info',      // 停泊
-    1: 'success',   // 航行中
-    2: 'warning',   // 锚泊
-    3: 'danger'     // 维修
+  const statusMap = {
+    '0': 'info',    // 停泊
+    '1': 'success', // 航行中
+    '2': 'warning', // 锚泊
+    '3': 'danger'   // 维修
   }
-  return typeMap[status] || 'info'
+  return statusMap[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const textMap = {
-    0: '停泊',
-    1: '航行中',
-    2: '锚泊',
-    3: '维修'
+  const statusMap = {
+    '0': '停泊',
+    '1': '航行中',
+    '2': '锚泊',
+    '3': '维修'
   }
-  return textMap[status] || '未知'
+  return statusMap[status] || '未知'
 }
 
 // 数据加载函数
@@ -266,6 +293,7 @@ const deleteShipData = async (id) => {
 const handleAdd = () => {
   dialogTitle.value = '新增船舶'
   isEdit.value = false
+  resetForm()
   dialogVisible.value = true
 }
 
@@ -273,61 +301,56 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   dialogTitle.value = '编辑船舶'
   isEdit.value = true
-  Object.assign(form, row)
+  Object.keys(form).forEach(key => {
+    form[key] = row[key]
+  })
+  form.status = String(row.status) // 确保状态值为字符串
   dialogVisible.value = true
 }
 
 // 提交表单
-const handleSubmit = () => {
-  formRef.value.validate(async (valid) => {
-    if (valid) {
-      try {
-        if (isEdit.value) {
-          await updateShip(form.id, form)
-          ElMessage.success('更新成功')
-        } else {
-          await createShip(form)
-          ElMessage.success('创建成功')
-        }
-        dialogVisible.value = false
-        // 刷新列表
-        if (dataTableRef.value) {
-          dataTableRef.value.refresh()
-        }
-      } catch (error) {
-        ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
-      }
+const handleSubmit = async () => {
+  try {
+    await formRef.value?.validate()
+    
+    const formData = { ...form }
+    formData.status = parseInt(formData.status) // 转换为数字
+    
+    if (isEdit.value) {
+      await updateShip(formData.id, formData)
+      ElMessage.success('更新成功')
+    } else {
+      await createShip(formData)
+      ElMessage.success('创建成功')
     }
-  })
+    
+    dialogVisible.value = false
+    // 刷新表格数据
+    const dataTableRef = ref()
+    dataTableRef.value?.loadData()
+  } catch (error) {
+    console.error('提交失败:', error)
+    ElMessage.error('操作失败')
+  }
 }
 
 // 重置表单
 const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.resetFields()
-  }
-  Object.assign(form, {
-    id: null,
-    name: '',
-    typeCn: '',
-    typeEn: '',
-    flag: '',
-    mmsi: '',
-    imoNumber: '',
-    grossTonnage: null,
-    deadweightTonnage: null
+  Object.keys(form).forEach(key => {
+    if (key === 'status') {
+      form[key] = '0'
+    } else if (key === 'grossTonnage' || key === 'deadweightTonnage') {
+      form[key] = null
+    } else {
+      form[key] = ''
+    }
   })
+  formRef.value?.clearValidate()
 }
-
-const dataTableRef = ref()
 </script>
 
 <style scoped>
-.ship-list {
-  height: 100%;
+.ship-management {
+  padding: 20px;
 }
-
-.text-gray {
-  color: #999;
-}
-</style> 
+</style>

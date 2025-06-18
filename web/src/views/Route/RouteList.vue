@@ -1,285 +1,333 @@
 <template>
   <div class="route-list">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <div class="header-left">
-            <span class="title">航线管理</span>
-            <el-input
-              v-model="searchKeyword"
-              placeholder="搜索航线"
-              prefix-icon="Search"
-              style="width: 200px; margin-left: 16px"
-              size="small"
-            />
-          </div>
-          <el-button type="primary" @click="handleAddRoute">
-            <el-icon><Plus /></el-icon>新增航线
-          </el-button>
-        </div>
+    <DataTable
+      ref="dataTableRef"
+      :columns="columns"
+      :search-config="searchConfig"
+      :load-data="loadRouteData"
+      :delete-data="deleteRouteData"
+      @add="handleAdd"
+      @edit="handleEdit"
+    >
+      <!-- 自定义列插槽 -->
+      <template #route="{ row }">
+        {{ row.startPort }} → {{ row.endPort }}
       </template>
+      
+      <template #status="{ row }">
+        <el-tag :type="getStatusType(row.status)">
+          {{ row.status }}
+        </el-tag>
+      </template>
+    </DataTable>
 
-      <el-table :data="routes" style="width: 100%" border>
-        <el-table-column prop="code" label="航线编号" width="120" />
-        <el-table-column prop="name" label="航线名称" width="200" />
-        <el-table-column label="起始港口">
-          <template #default="scope">
-            {{ scope.row.startPort }} → {{ scope.row.endPort }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="distance" label="航程(海里)" width="120" align="right" />
-        <el-table-column prop="duration" label="预计航行时间" width="120" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)">
-              {{ scope.row.status }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="scope">
-            <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button link type="primary" @click="handleView(scope.row)">查看</el-button>
-            <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-    </el-card>
-
-    <!-- 新增/编辑航线对话框 -->
+    <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="dialogType === 'add' ? '新增航线' : '编辑航线'"
-      width="600px"
+      :title="dialogTitle"
+      width="700px"
+      @close="resetForm"
     >
-      <el-form ref="formRef" :model="routeForm" :rules="rules" label-width="100px">
-        <el-form-item label="航线编号" prop="code">
-          <el-input v-model="routeForm.code" placeholder="请输入航线编号" />
-        </el-form-item>
-        <el-form-item label="航线名称" prop="name">
-          <el-input v-model="routeForm.name" placeholder="请输入航线名称" />
-        </el-form-item>
-        <el-form-item label="起始港口" prop="startPort">
-          <el-select v-model="routeForm.startPort" placeholder="请选择起始港口" style="width: 100%">
-            <el-option v-for="port in ports" :key="port.code" :label="port.name" :value="port.code" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="目的港口" prop="endPort">
-          <el-select v-model="routeForm.endPort" placeholder="请选择目的港口" style="width: 100%">
-            <el-option v-for="port in ports" :key="port.code" :label="port.name" :value="port.code" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="航程" prop="distance">
-          <el-input-number v-model="routeForm.distance" :min="0" :step="100" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="预计时间" prop="duration">
-          <el-input v-model="routeForm.duration" placeholder="请输入预计航行时间" />
-        </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="routeForm.status" placeholder="请选择状态" style="width: 100%">
-            <el-option label="正常" value="正常" />
-            <el-option label="维护中" value="维护中" />
-            <el-option label="已停用" value="已停用" />
-          </el-select>
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="120px"
+      >
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="航线编号" prop="code">
+              <el-input v-model="form.code" placeholder="请输入航线编号" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="航线名称" prop="name">
+              <el-input v-model="form.name" placeholder="请输入航线名称" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="起始港口" prop="startPortId">
+              <el-select v-model="form.startPortId" placeholder="请选择起始港口" style="width: 100%">
+                <el-option v-for="port in ports" :key="port.id" :label="port.name" :value="port.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="目的港口" prop="endPortId">
+              <el-select v-model="form.endPortId" placeholder="请选择目的港口" style="width: 100%">
+                <el-option v-for="port in ports" :key="port.id" :label="port.name" :value="port.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="航程(海里)" prop="distance">
+              <el-input-number
+                v-model="form.distance"
+                :min="0"
+                :step="100"
+                style="width: 100%"
+                placeholder="航程"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="预计时间" prop="estimatedDuration">
+              <el-input v-model="form.estimatedDuration" placeholder="如: 5天" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
+                <el-option label="正常" value="ACTIVE" />
+                <el-option label="维护中" value="MAINTENANCE" />
+                <el-option label="已停用" value="INACTIVE" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="最大载重(吨)" prop="maxCapacity">
+              <el-input-number
+                v-model="form.maxCapacity"
+                :min="0"
+                :step="1000"
+                style="width: 100%"
+                placeholder="最大载重"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="描述" prop="description">
+          <el-input
+            v-model="form.description"
+            type="textarea"
+            :rows="3"
+            placeholder="航线描述"
+          />
         </el-form-item>
       </el-form>
+
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </span>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">
+          {{ isEdit ? '更新' : '创建' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus } from '@element-plus/icons-vue'
-import type { FormInstance, FormRules } from 'element-plus'
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import DataTable from '@/components/DataTable.vue'
+import { getRouteList, createRoute, updateRoute, deleteRoute } from '@/api/route'
+import { getPortList } from '@/api/port'
 
-// 分页相关
-const currentPage = ref(1)
-const pageSize = ref(10)
-const total = ref(100)
+// 表格列配置
+const columns = [
+  { prop: 'code', label: '航线编号', width: 120 },
+  { prop: 'name', label: '航线名称', width: 180 },
+  { prop: 'route', label: '航线', width: 250, slot: 'route' },
+  { prop: 'distance', label: '航程(海里)', width: 120, align: 'right' },
+  { prop: 'estimatedDuration', label: '预计时间', width: 120 },
+  { prop: 'maxCapacity', label: '最大载重(吨)', width: 130, align: 'right' },
+  { prop: 'status', label: '状态', width: 100, slot: 'status' },
+  { prop: 'createdAt', label: '创建时间', width: 160 }
+]
 
-// 搜索关键词
-const searchKeyword = ref('')
+// 搜索配置
+const searchConfig = [
+  {
+    prop: 'name',
+    label: '航线名称',
+    type: 'input',
+    placeholder: '请输入航线名称'
+  },
+  {
+    prop: 'code',
+    label: '航线编号',
+    type: 'input',
+    placeholder: '请输入航线编号'
+  },
+  {
+    prop: 'status',
+    label: '状态',
+    type: 'select',
+    placeholder: '请选择状态',
+    options: [
+      { label: '正常', value: 'ACTIVE' },
+      { label: '维护中', value: 'MAINTENANCE' },
+      { label: '已停用', value: 'INACTIVE' }
+    ]
+  }
+]
 
-// 对话框相关
+// 弹窗相关
 const dialogVisible = ref(false)
-const dialogType = ref<'add' | 'edit'>('add')
-const formRef = ref<FormInstance>()
+const dialogTitle = ref('')
+const isEdit = ref(false)
+const formRef = ref()
+const dataTableRef = ref()
+
+// 港口列表
+const ports = ref([])
 
 // 表单数据
-const routeForm = reactive({
+const form = reactive({
+  id: null,
   code: '',
   name: '',
-  startPort: '',
-  endPort: '',
-  distance: 0,
-  duration: '',
-  status: '正常'
+  startPortId: null,
+  endPortId: null,
+  distance: null,
+  estimatedDuration: '',
+  maxCapacity: null,
+  status: 'ACTIVE',
+  description: ''
 })
 
 // 表单验证规则
-const rules: FormRules = {
-  code: [{ required: true, message: '请输入航线编号', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入航线名称', trigger: 'blur' }],
-  startPort: [{ required: true, message: '请选择起始港口', trigger: 'change' }],
-  endPort: [{ required: true, message: '请选择目的港口', trigger: 'change' }],
-  distance: [{ required: true, message: '请输入航程', trigger: 'blur' }],
-  duration: [{ required: true, message: '请输入预计航行时间', trigger: 'blur' }],
-  status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+const rules = {
+  code: [
+    { required: true, message: '请输入航线编号', trigger: 'blur' }
+  ],
+  name: [
+    { required: true, message: '请输入航线名称', trigger: 'blur' }
+  ],
+  startPortId: [
+    { required: true, message: '请选择起始港口', trigger: 'change' }
+  ],
+  endPortId: [
+    { required: true, message: '请选择目的港口', trigger: 'change' }
+  ],
+  distance: [
+    { required: true, message: '请输入航程', trigger: 'blur' }
+  ],
+  estimatedDuration: [
+    { required: true, message: '请输入预计时间', trigger: 'blur' }
+  ],
+  status: [
+    { required: true, message: '请选择状态', trigger: 'change' }
+  ]
 }
 
-// 模拟数据
-const routes = [
-  {
-    code: 'R001',
-    name: '上海-新加坡快线',
-    startPort: '上海港',
-    endPort: '新加坡港',
-    distance: 2580,
-    duration: '5天',
-    status: '正常'
-  },
-  {
-    code: 'R002',
-    name: '青岛-釜山航线',
-    startPort: '青岛港',
-    endPort: '釜山港',
-    distance: 390,
-    duration: '1天',
-    status: '正常'
+// 状态处理函数
+const getStatusType = (status) => {
+  const typeMap = {
+    'ACTIVE': 'success',
+    'MAINTENANCE': 'warning',
+    'INACTIVE': 'danger'
   }
-]
+  return typeMap[status] || 'info'
+}
 
-const ports = [
-  { code: 'SHA', name: '上海港' },
-  { code: 'SIN', name: '新加坡港' },
-  { code: 'QIN', name: '青岛港' },
-  { code: 'PUS', name: '釜山港' }
-]
-
-// 获取状态类型
-const getStatusType = (status: string) => {
-  const statusMap: Record<string, string> = {
-    '正常': 'success',
-    '维护中': 'warning',
-    '已停用': 'danger'
+// 数据加载函数
+const loadRouteData = async (params) => {
+  try {
+    const result = await getRouteList(params)
+    return result
+  } catch (error) {
+    console.error('加载航线数据失败:', error)
+    throw error
   }
-  return statusMap[status] || 'info'
 }
 
-// 处理分页
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  // TODO: 重新加载数据
+// 删除数据函数
+const deleteRouteData = async (id) => {
+  try {
+    await deleteRoute(id)
+  } catch (error) {
+    console.error('删除航线失败:', error)
+    throw error
+  }
 }
 
-const handleCurrentChange = (val: number) => {
-  currentPage.value = val
-  // TODO: 重新加载数据
+// 加载港口列表
+const loadPorts = async () => {
+  try {
+    const result = await getPortList({ page: 1, size: 1000 })
+    ports.value = result.data || []
+  } catch (error) {
+    console.error('加载港口列表失败:', error)
+  }
 }
 
-// 处理新增航线
-const handleAddRoute = () => {
-  dialogType.value = 'add'
+// 新增
+const handleAdd = () => {
+  dialogTitle.value = '新增航线'
+  isEdit.value = false
   dialogVisible.value = true
-  // 重置表单
+}
+
+// 编辑
+const handleEdit = (row) => {
+  dialogTitle.value = '编辑航线'
+  isEdit.value = true
+  Object.assign(form, row)
+  dialogVisible.value = true
+}
+
+// 提交表单
+const handleSubmit = () => {
+  formRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        if (isEdit.value) {
+          await updateRoute(form.id, form)
+          ElMessage.success('更新成功')
+        } else {
+          await createRoute(form)
+          ElMessage.success('创建成功')
+        }
+        dialogVisible.value = false
+        // 刷新列表
+        if (dataTableRef.value) {
+          dataTableRef.value.refresh()
+        }
+      } catch (error) {
+        ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
+      }
+    }
+  })
+}
+
+// 重置表单
+const resetForm = () => {
   if (formRef.value) {
     formRef.value.resetFields()
   }
-}
-
-// 处理编辑航线
-const handleEdit = (row: any) => {
-  dialogType.value = 'edit'
-  dialogVisible.value = true
-  // 填充表单数据
-  Object.assign(routeForm, row)
-}
-
-// 处理查看航线
-const handleView = (row: any) => {
-  // TODO: 实现查看详情功能
-  console.log('查看航线:', row)
-}
-
-// 处理删除航线
-const handleDelete = (row: any) => {
-  ElMessageBox.confirm(
-    `确定要删除航线"${row.name}"吗？`,
-    '警告',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    // TODO: 调用删除API
-    ElMessage.success('删除成功')
-  }).catch(() => {
-    // 取消删除
+  Object.assign(form, {
+    id: null,
+    code: '',
+    name: '',
+    startPortId: null,
+    endPortId: null,
+    distance: null,
+    estimatedDuration: '',
+    maxCapacity: null,
+    status: 'ACTIVE',
+    description: ''
   })
 }
 
-// 处理表单提交
-const handleSubmit = async () => {
-  if (!formRef.value) return
-  
-  await formRef.value.validate((valid) => {
-    if (valid) {
-      // TODO: 调用保存API
-      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '更新成功')
-      dialogVisible.value = false
-    }
-  })
-}
+// 组件挂载时加载港口列表
+onMounted(() => {
+  loadPorts()
+})
 </script>
 
 <style scoped>
 .route-list {
-  padding: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-}
-
-.title {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.pagination-container {
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.el-dialog__body) {
-  padding-top: 10px;
+  height: 100%;
 }
 </style> 
