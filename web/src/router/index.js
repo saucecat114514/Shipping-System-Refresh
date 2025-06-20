@@ -23,6 +23,8 @@ import OrderCreate from '@/views/Order/OrderCreate.vue'
 import UserManagement from '@/views/User/UserManagement.vue'
 // 系统配置模块
 import SystemConfig from '@/views/Config/SystemConfig.vue'
+// 连接测试模块
+import TestConnection from '@/views/TestConnection.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -178,6 +180,17 @@ const router = createRouter({
           path: '',
           name: 'testPort',
           component: TestPortAPI
+        }
+      ]
+    },
+    {
+      path: '/test-connection',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'testConnection',
+          component: TestConnection
         }
       ]
     }

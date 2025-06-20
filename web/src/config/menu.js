@@ -7,7 +7,8 @@ import {
   Calendar,
   Document,
   Setting,
-  User
+  User,
+  Connection
 } from '@element-plus/icons-vue'
 
 export const menuItems = [
@@ -104,5 +105,10 @@ export const menuItems = [
     title: '系统测试',
     icon: Setting,
     path: '/system-test'
+  },
+  {
+    title: '连接测试',
+    icon: Connection,
+    path: '/test-connection'
   }
 ] 

@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import router from '../router'
 
 const request = axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: '/api',  // 使用相对路径，让Vite代理处理
   timeout: 10000
 })
 

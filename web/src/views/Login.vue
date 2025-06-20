@@ -22,7 +22,7 @@
 import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { login } from '@/api/auth';
 
 const router = useRouter();
 const loginFormRef = ref();
@@ -44,13 +44,14 @@ const handleLogin = () => {
   loginFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        const response = await axios.post('http://localhost:8080/api/login', {
+        const response = await login({
           username: loginForm.username,
           password: loginForm.password
         });
-        const token = response.data.data.token;
+        
+        const token = response.token;
         localStorage.setItem('token', token);
-        localStorage.setItem('userInfo', JSON.stringify(response.data.data));
+        localStorage.setItem('userInfo', JSON.stringify(response));
         ElMessage.success('登录成功');
         router.push('/dashboard');
       } catch (error) {
