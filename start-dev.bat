@@ -29,7 +29,7 @@ cd ..
 
 REM 等待后端启动
 echo 等待后端服务启动...
-timeout /t 10
+timeout /t 10 /nobreak
 
 REM 启动前端
 echo 启动前端服务...
@@ -39,9 +39,10 @@ cd ..
 
 echo.
 echo 服务启动完成！
-echo 后端地址: http://localhost:8080
+echo 后端地址: http://localhost:8080/api
 echo 前端地址: http://localhost:5173
 echo API文档: http://localhost:8080/api/swagger-ui.html
+echo 连接测试: http://localhost:5173/test-connection
 echo.
 echo 按任意键退出...
 pause 

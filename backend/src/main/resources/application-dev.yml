@@ -27,8 +27,6 @@ spring:
       data-locations: classpath:data.sql
       continue-on-error: true
 
-  profiles:
-    active: dev
 
 
 
