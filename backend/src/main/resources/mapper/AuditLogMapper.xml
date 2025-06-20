@@ -66,10 +66,10 @@
                 AND client_ip LIKE CONCAT('%', #{clientIp}, '%')
             </if>
             <if test="startTime != null">
-                AND operation_time >= #{startTime}
+                AND operation_time &gt;= #{startTime}
             </if>
             <if test="endTime != null">
-                AND operation_time <= #{endTime}
+                AND operation_time &lt;= #{endTime}
             </if>
         </where>
         ORDER BY
@@ -115,10 +115,10 @@
                 AND client_ip LIKE CONCAT('%', #{clientIp}, '%')
             </if>
             <if test="startTime != null">
-                AND operation_time >= #{startTime}
+                AND operation_time &gt;= #{startTime}
             </if>
             <if test="endTime != null">
-                AND operation_time <= #{endTime}
+                AND operation_time &lt;= #{endTime}
             </if>
         </where>
     </select>
@@ -126,7 +126,7 @@
     <!-- 批量删除过期的审计日志 -->
     <delete id="deleteExpiredLogs" parameterType="int">
         DELETE FROM audit_logs 
-        WHERE operation_time <= DATE_SUB(NOW(), INTERVAL #{retentionDays} DAY)
+        WHERE operation_time &lt;= DATE_SUB(NOW(), INTERVAL #{retentionDays} DAY)
     </delete>
 
     <!-- 获取用户操作统计 -->
@@ -137,7 +137,7 @@
             AVG(response_time) as avg_response_time
         FROM audit_logs 
         WHERE username = #{username}
-        AND operation_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        AND operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         GROUP BY operation
         ORDER BY count DESC
     </select>
@@ -149,7 +149,7 @@
             COUNT(*) as count,
             AVG(response_time) as avg_response_time
         FROM audit_logs 
-        WHERE operation_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        WHERE operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         GROUP BY operation
         ORDER BY count DESC
     </select>
@@ -161,7 +161,7 @@
             COUNT(*) as count,
             AVG(response_time) as avg_response_time
         FROM audit_logs 
-        WHERE operation_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        WHERE operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         GROUP BY module
         ORDER BY count DESC
     </select>
@@ -175,7 +175,7 @@
             error_msg
         FROM audit_logs 
         WHERE result = 'ERROR'
-        AND operation_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        AND operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
         GROUP BY module, operation, error_msg
         ORDER BY count DESC
     </select>

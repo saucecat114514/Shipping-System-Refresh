@@ -8,21 +8,16 @@ spring:
     name: shipping-system
   
   datasource:
-    url: jdbc:h2:mem:shipping_system;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+    url: jdbc:mysql://localhost:3306/shipping_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       minimum-idle: 5
       maximum-pool-size: 20
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-  
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
 
   # 数据库初始化配置
   sql:
@@ -31,6 +26,9 @@ spring:
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
       continue-on-error: true
+
+  profiles:
+    active: dev
 
 
 

@@ -12,8 +12,8 @@
         <result column="end_longitude" property="endLongitude" jdbcType="DECIMAL"/>
         <result column="end_latitude" property="endLatitude" jdbcType="DECIMAL"/>
         <result column="end_address" property="endAddress" jdbcType="VARCHAR"/>
-        <result column="waypoints" property="waypoints" jdbcType="TEXT"/>
-        <result column="route_coordinates" property="routeCoordinates" jdbcType="TEXT"/>
+        <result column="waypoints" property="waypoints" jdbcType="LONGVARCHAR"/>
+        <result column="route_coordinates" property="routeCoordinates" jdbcType="LONGVARCHAR"/>
         <result column="distance" property="distance" jdbcType="DECIMAL"/>
         <result column="estimated_duration" property="estimatedDuration" jdbcType="DECIMAL"/>
         <result column="route_type" property="routeType" jdbcType="VARCHAR"/>

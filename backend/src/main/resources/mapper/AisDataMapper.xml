@@ -55,28 +55,28 @@
                 AND ship_id = #{query.shipId}
             </if>
             <if test="query.startTime != null">
-                AND timestamp >= #{query.startTime}
+                AND timestamp &gt;= #{query.startTime}
             </if>
             <if test="query.endTime != null">
-                AND timestamp <= #{query.endTime}
+                AND timestamp &lt;= #{query.endTime}
             </if>
             <if test="query.minLongitude != null">
-                AND longitude >= #{query.minLongitude}
+                AND longitude &gt;= #{query.minLongitude}
             </if>
             <if test="query.maxLongitude != null">
-                AND longitude <= #{query.maxLongitude}
+                AND longitude &lt;= #{query.maxLongitude}
             </if>
             <if test="query.minLatitude != null">
-                AND latitude >= #{query.minLatitude}
+                AND latitude &gt;= #{query.minLatitude}
             </if>
             <if test="query.maxLatitude != null">
-                AND latitude <= #{query.maxLatitude}
+                AND latitude &lt;= #{query.maxLatitude}
             </if>
             <if test="query.minSpeed != null">
-                AND speed >= #{query.minSpeed}
+                AND speed &gt;= #{query.minSpeed}
             </if>
             <if test="query.maxSpeed != null">
-                AND speed <= #{query.maxSpeed}
+                AND speed &lt;= #{query.maxSpeed}
             </if>
         </where>
         ORDER BY
@@ -111,28 +111,28 @@
                 AND ship_id = #{query.shipId}
             </if>
             <if test="query.startTime != null">
-                AND timestamp >= #{query.startTime}
+                AND timestamp &gt;= #{query.startTime}
             </if>
             <if test="query.endTime != null">
-                AND timestamp <= #{query.endTime}
+                AND timestamp &lt;= #{query.endTime}
             </if>
             <if test="query.minLongitude != null">
-                AND longitude >= #{query.minLongitude}
+                AND longitude &gt;= #{query.minLongitude}
             </if>
             <if test="query.maxLongitude != null">
-                AND longitude <= #{query.maxLongitude}
+                AND longitude &lt;= #{query.maxLongitude}
             </if>
             <if test="query.minLatitude != null">
-                AND latitude >= #{query.minLatitude}
+                AND latitude &gt;= #{query.minLatitude}
             </if>
             <if test="query.maxLatitude != null">
-                AND latitude <= #{query.maxLatitude}
+                AND latitude &lt;= #{query.maxLatitude}
             </if>
             <if test="query.minSpeed != null">
-                AND speed >= #{query.minSpeed}
+                AND speed &gt;= #{query.minSpeed}
             </if>
             <if test="query.maxSpeed != null">
-                AND speed <= #{query.maxSpeed}
+                AND speed &lt;= #{query.maxSpeed}
             </if>
         </where>
     </select>
@@ -161,10 +161,10 @@
         FROM ais_data
         WHERE ship_id = #{shipId}
         <if test="startTime != null and startTime != ''">
-            AND timestamp >= #{startTime}
+            AND timestamp &gt;= #{startTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND timestamp <= #{endTime}
+            AND timestamp &lt;= #{endTime}
         </if>
         ORDER BY timestamp ASC
     </select>
@@ -175,10 +175,10 @@
         FROM ais_data
         WHERE mmsi = #{mmsi}
         <if test="startTime != null and startTime != ''">
-            AND timestamp >= #{startTime}
+            AND timestamp &gt;= #{startTime}
         </if>
         <if test="endTime != null and endTime != ''">
-            AND timestamp <= #{endTime}
+            AND timestamp &lt;= #{endTime}
         </if>
         ORDER BY timestamp ASC
     </select>
@@ -198,7 +198,7 @@
 
     <!-- 清理过期数据 -->
     <delete id="deleteExpiredData" parameterType="java.lang.String">
-        DELETE FROM ais_data WHERE timestamp < #{beforeTime}
+        DELETE FROM ais_data WHERE timestamp &lt; #{beforeTime}
     </delete>
 
 </mapper> 

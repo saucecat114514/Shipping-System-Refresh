@@ -1,0 +1,1698 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.AisDataMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.AisData">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="mmsi" property="mmsi" jdbcType="VARCHAR"/>
+        <result column="ship_id" property="shipId" jdbcType="BIGINT"/>
+        <result column="longitude" property="longitude" jdbcType="DECIMAL"/>
+        <result column="latitude" property="latitude" jdbcType="DECIMAL"/>
+        <result column="speed" property="speed" jdbcType="DECIMAL"/>
+        <result column="heading" property="heading" jdbcType="DECIMAL"/>
+        <result column="timestamp" property="timestamp" jdbcType="TIMESTAMP"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at
+    </sql>
+
+    <!-- 插入AIS数据 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.AisData" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ais_data (mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at)
+        VALUES (#{mmsi}, #{shipId}, #{longitude}, #{latitude}, #{speed}, #{heading}, #{timestamp}, #{createdAt})
+    </insert>
+
+    <!-- 批量插入AIS数据 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO ais_data (mmsi, ship_id, longitude, latitude, speed, heading, timestamp, created_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.mmsi}, #{item.shipId}, #{item.longitude}, #{item.latitude}, 
+             #{item.speed}, #{item.heading}, #{item.timestamp}, #{item.createdAt})
+        </foreach>
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE id = #{id}
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        <where>
+            <if test="query.mmsi != null and query.mmsi != ''">
+                AND mmsi = #{query.mmsi}
+            </if>
+            <if test="query.shipId != null">
+                AND ship_id = #{query.shipId}
+            </if>
+            <if test="query.startTime != null">
+                AND timestamp &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND timestamp &lt;= #{query.endTime}
+            </if>
+            <if test="query.minLongitude != null">
+                AND longitude &gt;= #{query.minLongitude}
+            </if>
+            <if test="query.maxLongitude != null">
+                AND longitude &lt;= #{query.maxLongitude}
+            </if>
+            <if test="query.minLatitude != null">
+                AND latitude &gt;= #{query.minLatitude}
+            </if>
+            <if test="query.maxLatitude != null">
+                AND latitude &lt;= #{query.maxLatitude}
+            </if>
+            <if test="query.minSpeed != null">
+                AND speed &gt;= #{query.minSpeed}
+            </if>
+            <if test="query.maxSpeed != null">
+                AND speed &lt;= #{query.maxSpeed}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                timestamp
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'ASC'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM ais_data
+        <where>
+            <if test="query.mmsi != null and query.mmsi != ''">
+                AND mmsi = #{query.mmsi}
+            </if>
+            <if test="query.shipId != null">
+                AND ship_id = #{query.shipId}
+            </if>
+            <if test="query.startTime != null">
+                AND timestamp &gt;= #{query.startTime}
+            </if>
+            <if test="query.endTime != null">
+                AND timestamp &lt;= #{query.endTime}
+            </if>
+            <if test="query.minLongitude != null">
+                AND longitude &gt;= #{query.minLongitude}
+            </if>
+            <if test="query.maxLongitude != null">
+                AND longitude &lt;= #{query.maxLongitude}
+            </if>
+            <if test="query.minLatitude != null">
+                AND latitude &gt;= #{query.minLatitude}
+            </if>
+            <if test="query.maxLatitude != null">
+                AND latitude &lt;= #{query.maxLatitude}
+            </if>
+            <if test="query.minSpeed != null">
+                AND speed &gt;= #{query.minSpeed}
+            </if>
+            <if test="query.maxSpeed != null">
+                AND speed &lt;= #{query.maxSpeed}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据MMSI查询最新数据 -->
+    <select id="selectLatestByMmsi" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE mmsi = #{mmsi}
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据船舶ID查询最新数据 -->
+    <select id="selectLatestByShipId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE ship_id = #{shipId}
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据船舶ID查询轨迹数据 -->
+    <select id="selectTrackByShipId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE ship_id = #{shipId}
+        <if test="startTime != null and startTime != ''">
+            AND timestamp &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND timestamp &lt;= #{endTime}
+        </if>
+        ORDER BY timestamp ASC
+    </select>
+
+    <!-- 根据MMSI查询轨迹数据 -->
+    <select id="selectTrackByMmsi" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM ais_data
+        WHERE mmsi = #{mmsi}
+        <if test="startTime != null and startTime != ''">
+            AND timestamp &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND timestamp &lt;= #{endTime}
+        </if>
+        ORDER BY timestamp ASC
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ais_data WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM ais_data WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 清理过期数据 -->
+    <delete id="deleteExpiredData" parameterType="java.lang.String">
+        DELETE FROM ais_data WHERE timestamp &lt; #{beforeTime}
+    </delete>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.AuditLogMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="AuditLogResultMap" type="com.shipping.model.entity.AuditLog">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="user_role" property="userRole"/>
+        <result column="operation" property="operation"/>
+        <result column="module" property="module"/>
+        <result column="method" property="method"/>
+        <result column="request_url" property="requestUrl"/>
+        <result column="request_method" property="requestMethod"/>
+        <result column="request_params" property="requestParams"/>
+        <result column="client_ip" property="clientIp"/>
+        <result column="user_agent" property="userAgent"/>
+        <result column="result" property="result"/>
+        <result column="error_msg" property="errorMsg"/>
+        <result column="response_time" property="responseTime"/>
+        <result column="operation_time" property="operationTime"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <!-- 新增审计日志 -->
+    <insert id="insertAuditLog" parameterType="com.shipping.model.entity.AuditLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO audit_logs (
+            username, user_role, operation, module, method,
+            request_url, request_method, request_params, client_ip, user_agent,
+            result, error_msg, response_time, operation_time, created_at
+        ) VALUES (
+            #{username}, #{userRole}, #{operation}, #{module}, #{method},
+            #{requestUrl}, #{requestMethod}, #{requestParams}, #{clientIp}, #{userAgent},
+            #{result}, #{errorMsg}, #{responseTime}, #{operationTime}, #{createdAt}
+        )
+    </insert>
+
+    <!-- 根据ID查询审计日志 -->
+    <select id="selectAuditLogById" parameterType="long" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs WHERE id = #{id}
+    </select>
+
+    <!-- 分页查询审计日志 -->
+    <select id="selectAuditLogList" parameterType="com.shipping.model.dto.AuditLogQueryRequest" resultMap="AuditLogResultMap">
+        SELECT * FROM audit_logs
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="userRole != null and userRole != ''">
+                AND user_role = #{userRole}
+            </if>
+            <if test="operation != null and operation != ''">
+                AND operation = #{operation}
+            </if>
+            <if test="module != null and module != ''">
+                AND module = #{module}
+            </if>
+            <if test="requestMethod != null and requestMethod != ''">
+                AND request_method = #{requestMethod}
+            </if>
+            <if test="result != null and result != ''">
+                AND result = #{result}
+            </if>
+            <if test="clientIp != null and clientIp != ''">
+                AND client_ip LIKE CONCAT('%', #{clientIp}, '%')
+            </if>
+            <if test="startTime != null">
+                AND operation_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND operation_time &lt;= #{endTime}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'username'">username</when>
+            <when test="sortBy == 'operation'">operation</when>
+            <when test="sortBy == 'module'">module</when>
+            <when test="sortBy == 'result'">result</when>
+            <when test="sortBy == 'responseTime'">response_time</when>
+            <when test="sortBy == 'createdAt'">created_at</when>
+            <otherwise>operation_time</otherwise>
+        </choose>
+        <choose>
+            <when test="sortOrder == 'ASC'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+        LIMIT #{pageSize} OFFSET #{pageSize} * (#{pageNum} - 1)
+    </select>
+
+    <!-- 查询审计日志总数 -->
+    <select id="countAuditLogs" parameterType="com.shipping.model.dto.AuditLogQueryRequest" resultType="int">
+        SELECT COUNT(*) FROM audit_logs
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="userRole != null and userRole != ''">
+                AND user_role = #{userRole}
+            </if>
+            <if test="operation != null and operation != ''">
+                AND operation = #{operation}
+            </if>
+            <if test="module != null and module != ''">
+                AND module = #{module}
+            </if>
+            <if test="requestMethod != null and requestMethod != ''">
+                AND request_method = #{requestMethod}
+            </if>
+            <if test="result != null and result != ''">
+                AND result = #{result}
+            </if>
+            <if test="clientIp != null and clientIp != ''">
+                AND client_ip LIKE CONCAT('%', #{clientIp}, '%')
+            </if>
+            <if test="startTime != null">
+                AND operation_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND operation_time &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+
+    <!-- 批量删除过期的审计日志 -->
+    <delete id="deleteExpiredLogs" parameterType="int">
+        DELETE FROM audit_logs 
+        WHERE operation_time &lt;= DATE_SUB(NOW(), INTERVAL #{retentionDays} DAY)
+    </delete>
+
+    <!-- 获取用户操作统计 -->
+    <select id="getUserOperationStats" resultType="map">
+        SELECT 
+            operation,
+            COUNT(*) as count,
+            AVG(response_time) as avg_response_time
+        FROM audit_logs 
+        WHERE username = #{username}
+        AND operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY operation
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取系统操作统计 -->
+    <select id="getSystemOperationStats" resultType="map">
+        SELECT 
+            operation,
+            COUNT(*) as count,
+            AVG(response_time) as avg_response_time
+        FROM audit_logs 
+        WHERE operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY operation
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取模块操作统计 -->
+    <select id="getModuleOperationStats" resultType="map">
+        SELECT 
+            module,
+            COUNT(*) as count,
+            AVG(response_time) as avg_response_time
+        FROM audit_logs 
+        WHERE operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY module
+        ORDER BY count DESC
+    </select>
+
+    <!-- 获取错误操作统计 -->
+    <select id="getErrorOperationStats" resultType="map">
+        SELECT 
+            module,
+            operation,
+            COUNT(*) as count,
+            error_msg
+        FROM audit_logs 
+        WHERE result = 'ERROR'
+        AND operation_time &gt;= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY module, operation, error_msg
+        ORDER BY count DESC
+    </select>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.MapRouteMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.MapRoute">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="route_name" property="routeName" jdbcType="VARCHAR"/>
+        <result column="start_longitude" property="startLongitude" jdbcType="DECIMAL"/>
+        <result column="start_latitude" property="startLatitude" jdbcType="DECIMAL"/>
+        <result column="start_address" property="startAddress" jdbcType="VARCHAR"/>
+        <result column="end_longitude" property="endLongitude" jdbcType="DECIMAL"/>
+        <result column="end_latitude" property="endLatitude" jdbcType="DECIMAL"/>
+        <result column="end_address" property="endAddress" jdbcType="VARCHAR"/>
+        <result column="waypoints" property="waypoints" jdbcType="TEXT"/>
+        <result column="route_coordinates" property="routeCoordinates" jdbcType="TEXT"/>
+        <result column="distance" property="distance" jdbcType="DECIMAL"/>
+        <result column="estimated_duration" property="estimatedDuration" jdbcType="DECIMAL"/>
+        <result column="route_type" property="routeType" jdbcType="VARCHAR"/>
+        <result column="vehicle_type" property="vehicleType" jdbcType="VARCHAR"/>
+        <result column="ship_type" property="shipType" jdbcType="VARCHAR"/>
+        <result column="fuel_consumption" property="fuelConsumption" jdbcType="DECIMAL"/>
+        <result column="route_cost" property="routeCost" jdbcType="DECIMAL"/>
+        <result column="status" property="status" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="created_by" property="createdBy" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, route_name, start_longitude, start_latitude, start_address,
+        end_longitude, end_latitude, end_address, waypoints, route_coordinates,
+        distance, estimated_duration, route_type, vehicle_type, ship_type,
+        fuel_consumption, route_cost, status, created_at, updated_at, created_by
+    </sql>
+
+    <!-- 插入路径 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.MapRoute" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO map_routes (
+            route_name, start_longitude, start_latitude, start_address,
+            end_longitude, end_latitude, end_address, waypoints, route_coordinates,
+            distance, estimated_duration, route_type, vehicle_type, ship_type,
+            fuel_consumption, route_cost, status, created_at, updated_at, created_by
+        ) VALUES (
+            #{routeName}, #{startLongitude}, #{startLatitude}, #{startAddress},
+            #{endLongitude}, #{endLatitude}, #{endAddress}, #{waypoints}, #{routeCoordinates},
+            #{distance}, #{estimatedDuration}, #{routeType}, #{vehicleType}, #{shipType},
+            #{fuelConsumption}, #{routeCost}, #{status}, #{createdAt}, #{updatedAt}, #{createdBy}
+        )
+    </insert>
+
+    <!-- 更新路径 -->
+    <update id="update" parameterType="com.shipping.model.entity.MapRoute">
+        UPDATE map_routes
+        SET route_name = #{routeName},
+            start_longitude = #{startLongitude},
+            start_latitude = #{startLatitude},
+            start_address = #{startAddress},
+            end_longitude = #{endLongitude},
+            end_latitude = #{endLatitude},
+            end_address = #{endAddress},
+            waypoints = #{waypoints},
+            route_coordinates = #{routeCoordinates},
+            distance = #{distance},
+            estimated_duration = #{estimatedDuration},
+            route_type = #{routeType},
+            vehicle_type = #{vehicleType},
+            ship_type = #{shipType},
+            fuel_consumption = #{fuelConsumption},
+            route_cost = #{routeCost},
+            status = #{status},
+            updated_at = #{updatedAt},
+            created_by = #{createdBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除路径 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM map_routes WHERE id = #{id}
+    </delete>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shipping.mapper.OrderMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="OrderResultMap" type="com.shipping.model.entity.Order">
+        <id column="id" property="id"/>
+        <result column="order_number" property="orderNumber"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="voyage_id" property="voyageId"/>
+        <result column="cargo_name" property="cargoName"/>
+        <result column="cargo_type" property="cargoType"/>
+        <result column="cargo_weight" property="cargoWeight"/>
+        <result column="cargo_volume" property="cargoVolume"/>
+        <result column="is_urgent" property="isUrgent"/>
+        <result column="base_price" property="basePrice"/>
+        <result column="additional_fees" property="additionalFees"/>
+        <result column="total_price" property="totalPrice"/>
+        <result column="status" property="status"/>
+        <result column="notes" property="notes"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 包含关联信息的结果映射 -->
+    <resultMap id="OrderWithDetailsResultMap" type="com.shipping.model.entity.Order" extends="OrderResultMap">
+        <association property="customer" javaType="com.shipping.model.entity.User">
+            <id column="customer_id" property="id"/>
+            <result column="customer_username" property="username"/>
+            <result column="customer_email" property="email"/>
+            <result column="customer_role" property="role"/>
+        </association>
+        <association property="voyage" javaType="com.shipping.model.entity.Voyage">
+            <id column="voyage_id" property="id"/>
+            <result column="voyage_number" property="voyageNumber"/>
+            <result column="departure_date" property="departureDate"/>
+            <result column="arrival_date" property="arrivalDate"/>
+            <result column="voyage_status" property="status"/>
+        </association>
+    </resultMap>
+
+    <!-- 插入订单 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Order" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (
+            order_number, customer_id, voyage_id, cargo_name, cargo_type,
+            cargo_weight, cargo_volume, is_urgent, base_price, additional_fees,
+            total_price, status, notes, created_at, updated_at
+        ) VALUES (
+            #{orderNumber}, #{customerId}, #{voyageId}, #{cargoName}, #{cargoType},
+            #{cargoWeight}, #{cargoVolume}, #{isUrgent}, #{basePrice}, #{additionalFees},
+            #{totalPrice}, #{status}, #{notes}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 根据ID删除订单 -->
+    <delete id="deleteById" parameterType="Long">
+        DELETE FROM orders WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新订单 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Order">
+        UPDATE orders SET
+            order_number = #{orderNumber},
+            customer_id = #{customerId},
+            voyage_id = #{voyageId},
+            cargo_name = #{cargoName},
+            cargo_type = #{cargoType},
+            cargo_weight = #{cargoWeight},
+            cargo_volume = #{cargoVolume},
+            is_urgent = #{isUrgent},
+            base_price = #{basePrice},
+            additional_fees = #{additionalFees},
+            total_price = #{totalPrice},
+            status = #{status},
+            notes = #{notes},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询订单 -->
+    <select id="selectById" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders WHERE id = #{id}
+    </select>
+
+    <!-- 根据订单编号查询订单 -->
+    <select id="selectByOrderNumber" parameterType="String" resultMap="OrderResultMap">
+        SELECT * FROM orders WHERE order_number = #{orderNumber}
+    </select>
+
+    <!-- 检查订单编号是否存在 -->
+    <select id="existsByOrderNumber" resultType="boolean">
+        SELECT COUNT(1) &gt; 0 FROM orders 
+        WHERE order_number = #{orderNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 分页查询订单列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.OrderQueryRequest" resultMap="OrderResultMap">
+        SELECT * FROM orders
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND created_at &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 分页查询订单列表（包含关联信息） -->
+    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.OrderQueryRequest" resultMap="OrderWithDetailsResultMap">
+        SELECT 
+            o.*,
+            u.username as customer_username, u.email as customer_email, u.role as customer_role,
+            v.voyage_number, v.departure_date, v.arrival_date, v.status as voyage_status
+        FROM orders o
+        LEFT JOIN users u ON o.customer_id = u.id
+        LEFT JOIN voyages v ON o.voyage_id = v.id
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND o.order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND o.customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND o.voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND o.cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND o.cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND o.status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND o.is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND o.created_at &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND o.created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY o.created_at DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.OrderQueryRequest" resultType="long">
+        SELECT COUNT(*) FROM orders
+        <where>
+            <if test="orderNumber != null and orderNumber != ''">
+                AND order_number LIKE CONCAT('%', #{orderNumber}, '%')
+            </if>
+            <if test="customerId != null">
+                AND customer_id = #{customerId}
+            </if>
+            <if test="voyageId != null">
+                AND voyage_id = #{voyageId}
+            </if>
+            <if test="cargoName != null and cargoName != ''">
+                AND cargo_name LIKE CONCAT('%', #{cargoName}, '%')
+            </if>
+            <if test="cargoType != null and cargoType != ''">
+                AND cargo_type = #{cargoType}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="isUrgent != null">
+                AND is_urgent = #{isUrgent}
+            </if>
+            <if test="startDate != null">
+                AND created_at &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND created_at <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据客户ID查询订单列表 -->
+    <select id="selectByCustomerId" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE customer_id = #{customerId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 根据航次ID查询订单列表 -->
+    <select id="selectByVoyageId" parameterType="Long" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE voyage_id = #{voyageId}
+        ORDER BY created_at DESC
+    </select>
+
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE orders SET 
+            status = #{status}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分配航次给订单 -->
+    <update id="assignVoyage">
+        UPDATE orders SET 
+            voyage_id = #{voyageId}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新订单运价信息 -->
+    <update id="updatePricing">
+        UPDATE orders SET 
+            base_price = #{basePrice},
+            additional_fees = #{additionalFees},
+            total_price = #{totalPrice},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据状态统计订单数量 -->
+    <select id="countByStatus" parameterType="String" resultType="int">
+        SELECT COUNT(*) FROM orders WHERE status = #{status}
+    </select>
+
+    <!-- 获取客户的订单列表 -->
+    <select id="selectCustomerOrders" resultMap="OrderResultMap">
+        SELECT * FROM orders 
+        WHERE customer_id = #{customerId}
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        ORDER BY created_at DESC
+    </select>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.PortMapper">
+
+    <!-- 港口实体映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.Port">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="name_cn" jdbcType="VARCHAR" property="nameCn" />
+        <result column="name_en" jdbcType="VARCHAR" property="nameEn" />
+        <result column="code" jdbcType="VARCHAR" property="code" />
+        <result column="country" jdbcType="VARCHAR" property="country" />
+        <result column="longitude" jdbcType="DECIMAL" property="longitude" />
+        <result column="latitude" jdbcType="DECIMAL" property="latitude" />
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, name_cn, name_en, code, country, longitude, latitude, created_at, updated_at
+    </sql>
+
+    <!-- 插入港口 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Port" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ports (
+            name_cn, name_en, code, country, longitude, latitude, created_at, updated_at
+        ) VALUES (
+            #{nameCn}, #{nameEn}, #{code}, #{country}, #{longitude}, #{latitude}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID删除港口 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ports WHERE id = #{id}
+    </delete>
+
+    <!-- 更新港口 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Port">
+        UPDATE ports SET
+            name_cn = #{nameCn},
+            name_en = #{nameEn},
+            code = #{code},
+            country = #{country},
+            longitude = #{longitude},
+            latitude = #{latitude},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询港口 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ports
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据代码查询港口 -->
+    <select id="selectByCode" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ports
+        WHERE code = #{code}
+    </select>
+
+    <!-- 分页查询港口列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.PortQueryRequest" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ports
+        <where>
+            <if test="name != null and name != ''">
+                AND (name_cn LIKE CONCAT('%', #{name}, '%') OR name_en LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="country != null and country != ''">
+                AND country LIKE CONCAT('%', #{country}, '%')
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询港口总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.PortQueryRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM ports
+        <where>
+            <if test="name != null and name != ''">
+                AND (name_cn LIKE CONCAT('%', #{name}, '%') OR name_en LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            <if test="code != null and code != ''">
+                AND code LIKE CONCAT('%', #{code}, '%')
+            </if>
+            <if test="country != null and country != ''">
+                AND country LIKE CONCAT('%', #{country}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有港口 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ports
+        ORDER BY name_cn
+    </select>
+
+    <!-- 检查港口代码是否存在 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT COUNT(1) &gt; 0
+        FROM ports
+        WHERE code = #{code}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.RouteMapper">
+
+    <!-- 航线实体映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.Route">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="route_number" jdbcType="VARCHAR" property="routeNumber" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="origin_port_id" jdbcType="BIGINT" property="originPortId" />
+        <result column="destination_port_id" jdbcType="BIGINT" property="destinationPortId" />
+        <result column="distance" jdbcType="DECIMAL" property="distance" />
+        <result column="distance_nm" jdbcType="DECIMAL" property="distanceNm" />
+        <result column="estimated_duration" jdbcType="DECIMAL" property="estimatedDuration" />
+        <result column="status" jdbcType="TINYINT" property="status" />
+        <result column="description" jdbcType="LONGVARCHAR" property="description" />
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+    </resultMap>
+
+    <!-- 航线实体映射（包含港口信息） -->
+    <resultMap id="RouteWithPortsResultMap" type="com.shipping.model.entity.Route" extends="BaseResultMap">
+        <association property="originPort" javaType="com.shipping.model.entity.Port">
+            <id column="origin_port_id" property="id" />
+            <result column="origin_port_name_cn" property="nameCn" />
+            <result column="origin_port_name_en" property="nameEn" />
+            <result column="origin_port_code" property="code" />
+            <result column="origin_port_country" property="country" />
+        </association>
+        <association property="destinationPort" javaType="com.shipping.model.entity.Port">
+            <id column="destination_port_id" property="id" />
+            <result column="destination_port_name_cn" property="nameCn" />
+            <result column="destination_port_name_en" property="nameEn" />
+            <result column="destination_port_code" property="code" />
+            <result column="destination_port_country" property="country" />
+        </association>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, route_number, name, origin_port_id, destination_port_id, distance, distance_nm,
+        estimated_duration, status, description, created_at, updated_at
+    </sql>
+
+    <!-- 包含港口信息的列 -->
+    <sql id="With_Ports_Column_List">
+        r.id, r.route_number, r.name, r.origin_port_id, r.destination_port_id, r.distance, r.distance_nm,
+        r.estimated_duration, r.status, r.description, r.created_at, r.updated_at,
+        op.name_cn as origin_port_name_cn, op.name_en as origin_port_name_en, 
+        op.code as origin_port_code, op.country as origin_port_country,
+        dp.name_cn as destination_port_name_cn, dp.name_en as destination_port_name_en,
+        dp.code as destination_port_code, dp.country as destination_port_country
+    </sql>
+
+    <!-- 插入航线 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Route" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO routes (
+            route_number, name, origin_port_id, destination_port_id, distance, distance_nm,
+            estimated_duration, status, description, created_at, updated_at
+        ) VALUES (
+            #{routeNumber}, #{name}, #{originPortId}, #{destinationPortId}, #{distance}, #{distanceNm},
+            #{estimatedDuration}, #{status}, #{description}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID删除航线 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM routes WHERE id = #{id}
+    </delete>
+
+    <!-- 更新航线 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Route">
+        UPDATE routes SET
+            route_number = #{routeNumber},
+            name = #{name},
+            origin_port_id = #{originPortId},
+            destination_port_id = #{destinationPortId},
+            distance = #{distance},
+            distance_nm = #{distanceNm},
+            estimated_duration = #{estimatedDuration},
+            status = #{status},
+            description = #{description},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询航线 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据航线编号查询航线 -->
+    <select id="selectByRouteNumber" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE route_number = #{routeNumber}
+    </select>
+
+    <!-- 分页查询航线列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.RouteQueryRequest" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询航线总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.RouteQueryRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM routes
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有航线 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM routes
+        WHERE status = 1
+        ORDER BY name
+    </select>
+
+    <!-- 检查航线编号是否存在 -->
+    <select id="existsByRouteNumber" resultType="boolean">
+        SELECT COUNT(1) &gt; 0
+        FROM routes
+        WHERE route_number = #{routeNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 查询包含港口信息的航线列表 -->
+    <select id="selectPageListWithPorts" parameterType="com.shipping.model.dto.RouteQueryRequest" resultMap="RouteWithPortsResultMap">
+        SELECT <include refid="With_Ports_Column_List" />
+        FROM routes r
+        LEFT JOIN ports op ON r.origin_port_id = op.id
+        LEFT JOIN ports dp ON r.destination_port_id = dp.id
+        <where>
+            <if test="routeNumber != null and routeNumber != ''">
+                AND r.route_number LIKE CONCAT('%', #{routeNumber}, '%')
+            </if>
+            <if test="name != null and name != ''">
+                AND r.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="originPortId != null">
+                AND r.origin_port_id = #{originPortId}
+            </if>
+            <if test="destinationPortId != null">
+                AND r.destination_port_id = #{destinationPortId}
+            </if>
+            <if test="status != null">
+                AND r.status = #{status}
+            </if>
+        </where>
+        ORDER BY r.created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.ShipMapper">
+
+    <!-- 船舶实体映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.Ship">
+        <id column="id" jdbcType="BIGINT" property="id" />
+        <result column="name" jdbcType="VARCHAR" property="name" />
+        <result column="type_cn" jdbcType="VARCHAR" property="typeCn" />
+        <result column="type_en" jdbcType="VARCHAR" property="typeEn" />
+        <result column="flag" jdbcType="VARCHAR" property="flag" />
+        <result column="mmsi" jdbcType="VARCHAR" property="mmsi" />
+        <result column="imo_number" jdbcType="VARCHAR" property="imoNumber" />
+        <result column="gross_tonnage" jdbcType="DECIMAL" property="grossTonnage" />
+        <result column="deadweight_tonnage" jdbcType="DECIMAL" property="deadweightTonnage" />
+        <result column="current_speed" jdbcType="DECIMAL" property="currentSpeed" />
+        <result column="current_heading" jdbcType="DECIMAL" property="currentHeading" />
+        <result column="current_longitude" jdbcType="DECIMAL" property="currentLongitude" />
+        <result column="current_latitude" jdbcType="DECIMAL" property="currentLatitude" />
+        <result column="status" jdbcType="TINYINT" property="status" />
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt" />
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt" />
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, name, type_cn, type_en, flag, mmsi, imo_number, gross_tonnage, deadweight_tonnage,
+        current_speed, current_heading, current_longitude, current_latitude, status, created_at, updated_at
+    </sql>
+
+    <!-- 插入船舶 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Ship" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ships (
+            name, type_cn, type_en, flag, mmsi, imo_number, gross_tonnage, deadweight_tonnage,
+            current_speed, current_heading, current_longitude, current_latitude, status, created_at, updated_at
+        ) VALUES (
+            #{name}, #{typeCn}, #{typeEn}, #{flag}, #{mmsi}, #{imoNumber}, #{grossTonnage}, #{deadweightTonnage},
+            #{currentSpeed}, #{currentHeading}, #{currentLongitude}, #{currentLatitude}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 根据ID删除船舶 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ships WHERE id = #{id}
+    </delete>
+
+    <!-- 更新船舶 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Ship">
+        UPDATE ships SET
+            name = #{name},
+            type_cn = #{typeCn},
+            type_en = #{typeEn},
+            flag = #{flag},
+            mmsi = #{mmsi},
+            imo_number = #{imoNumber},
+            gross_tonnage = #{grossTonnage},
+            deadweight_tonnage = #{deadweightTonnage},
+            current_speed = #{currentSpeed},
+            current_heading = #{currentHeading},
+            current_longitude = #{currentLongitude},
+            current_latitude = #{currentLatitude},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询船舶 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据MMSI查询船舶 -->
+    <select id="selectByMmsi" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE mmsi = #{mmsi}
+    </select>
+
+    <!-- 根据IMO编号查询船舶 -->
+    <select id="selectByImoNumber" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        WHERE imo_number = #{imoNumber}
+    </select>
+
+    <!-- 分页查询船舶列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.ShipQueryRequest" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND (type_cn LIKE CONCAT('%', #{type}, '%') OR type_en LIKE CONCAT('%', #{type}, '%'))
+            </if>
+            <if test="flag != null and flag != ''">
+                AND flag LIKE CONCAT('%', #{flag}, '%')
+            </if>
+            <if test="mmsi != null and mmsi != ''">
+                AND mmsi LIKE CONCAT('%', #{mmsi}, '%')
+            </if>
+            <if test="imoNumber != null and imoNumber != ''">
+                AND imo_number LIKE CONCAT('%', #{imoNumber}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 查询船舶总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.ShipQueryRequest" resultType="long">
+        SELECT COUNT(*)
+        FROM ships
+        <where>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="type != null and type != ''">
+                AND (type_cn LIKE CONCAT('%', #{type}, '%') OR type_en LIKE CONCAT('%', #{type}, '%'))
+            </if>
+            <if test="flag != null and flag != ''">
+                AND flag LIKE CONCAT('%', #{flag}, '%')
+            </if>
+            <if test="mmsi != null and mmsi != ''">
+                AND mmsi LIKE CONCAT('%', #{mmsi}, '%')
+            </if>
+            <if test="imoNumber != null and imoNumber != ''">
+                AND imo_number LIKE CONCAT('%', #{imoNumber}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有船舶 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List" />
+        FROM ships
+        ORDER BY name
+    </select>
+
+    <!-- 检查MMSI是否存在 -->
+    <select id="existsByMmsi" resultType="boolean">
+        SELECT COUNT(1) &gt; 0
+        FROM ships
+        WHERE mmsi = #{mmsi}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 检查IMO编号是否存在 -->
+    <select id="existsByImoNumber" resultType="boolean">
+        SELECT COUNT(1) &gt; 0
+        FROM ships
+        WHERE imo_number = #{imoNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.SystemConfigMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.SystemConfig">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="config_key" property="configKey" jdbcType="VARCHAR"/>
+        <result column="config_value" property="configValue" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, config_key, config_value, description, created_at, updated_at
+    </sql>
+
+    <!-- 插入系统配置 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.SystemConfig" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO system_config (config_key, config_value, description, created_at, updated_at)
+        VALUES (#{configKey}, #{configValue}, #{description}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <!-- 更新系统配置 -->
+    <update id="update" parameterType="com.shipping.model.entity.SystemConfig">
+        UPDATE system_config
+        SET config_key = #{configKey},
+            config_value = #{configValue},
+            description = #{description},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据配置键查询 -->
+    <select id="selectByKey" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        WHERE config_key = #{configKey}
+    </select>
+
+    <!-- 分页查询 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        <where>
+            <if test="query.configKey != null and query.configKey != ''">
+                AND config_key LIKE CONCAT('%', #{query.configKey}, '%')
+            </if>
+            <if test="query.configValue != null and query.configValue != ''">
+                AND config_value LIKE CONCAT('%', #{query.configValue}, '%')
+            </if>
+            <if test="query.description != null and query.description != ''">
+                AND description LIKE CONCAT('%', #{query.description}, '%')
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                config_key
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'DESC'">
+                DESC
+            </when>
+            <otherwise>
+                ASC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM system_config
+        <where>
+            <if test="query.configKey != null and query.configKey != ''">
+                AND config_key LIKE CONCAT('%', #{query.configKey}, '%')
+            </if>
+            <if test="query.configValue != null and query.configValue != ''">
+                AND config_value LIKE CONCAT('%', #{query.configValue}, '%')
+            </if>
+            <if test="query.description != null and query.description != ''">
+                AND description LIKE CONCAT('%', #{query.description}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 查询所有配置 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM system_config
+        ORDER BY config_key ASC
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM system_config WHERE id = #{id}
+    </delete>
+
+    <!-- 根据配置键删除 -->
+    <delete id="deleteByKey" parameterType="java.lang.String">
+        DELETE FROM system_config WHERE config_key = #{configKey}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM system_config WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 根据配置键更新配置值 -->
+    <update id="updateValueByKey">
+        UPDATE system_config
+        SET config_value = #{configValue},
+            updated_at = NOW()
+        WHERE config_key = #{configKey}
+    </update>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE system_config
+            SET config_value = #{item.configValue},
+                description = #{item.description},
+                updated_at = #{item.updatedAt}
+            WHERE config_key = #{item.configKey}
+        </foreach>
+    </update>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.shipping.mapper.UserMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.shipping.model.entity.User">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="username" jdbcType="VARCHAR" property="username"/>
+        <result column="password" jdbcType="VARCHAR" property="password"/>
+        <result column="email" jdbcType="VARCHAR" property="email"/>
+        <result column="real_name" jdbcType="VARCHAR" property="realName"/>
+        <result column="role" jdbcType="VARCHAR" property="role"/>
+        <result column="status" jdbcType="TINYINT" property="status"/>
+        <result column="created_at" jdbcType="TIMESTAMP" property="createdAt"/>
+        <result column="updated_at" jdbcType="TIMESTAMP" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, username, password, email, real_name, role, status, created_at, updated_at
+    </sql>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (
+            username, password, email, real_name, role, status, created_at, updated_at
+        ) VALUES (
+            #{username}, #{password}, #{email}, #{realName}, #{role}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <!-- 更新用户 -->
+    <update id="update" parameterType="com.shipping.model.entity.User">
+        UPDATE users
+        <set>
+            <if test="username != null and username != ''">
+                username = #{username},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+            <if test="email != null and email != ''">
+                email = #{email},
+            </if>
+            <if test="realName != null and realName != ''">
+                real_name = #{realName},
+            </if>
+            <if test="role != null and role != ''">
+                role = #{role},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            updated_at = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除用户 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+
+    <!-- 分页查询用户 -->
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM users
+        <where>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.email != null and query.email != ''">
+                AND email LIKE CONCAT('%', #{query.email}, '%')
+            </if>
+            <if test="query.realName != null and query.realName != ''">
+                AND real_name LIKE CONCAT('%', #{query.realName}, '%')
+            </if>
+            <if test="query.role != null and query.role != ''">
+                AND role = #{query.role}
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone LIKE CONCAT('%', #{query.phone}, '%')
+            </if>
+            <if test="query.department != null and query.department != ''">
+                AND department LIKE CONCAT('%', #{query.department}, '%')
+            </if>
+            <if test="query.position != null and query.position != ''">
+                AND position LIKE CONCAT('%', #{query.position}, '%')
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="query.sortField != null and query.sortField != ''">
+                ${query.sortField}
+            </when>
+            <otherwise>
+                created_at
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="query.sortDirection != null and query.sortDirection == 'ASC'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 查询用户总数 -->
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        <where>
+            <if test="query.username != null and query.username != ''">
+                AND username LIKE CONCAT('%', #{query.username}, '%')
+            </if>
+            <if test="query.email != null and query.email != ''">
+                AND email LIKE CONCAT('%', #{query.email}, '%')
+            </if>
+            <if test="query.realName != null and query.realName != ''">
+                AND real_name LIKE CONCAT('%', #{query.realName}, '%')
+            </if>
+            <if test="query.role != null and query.role != ''">
+                AND role = #{query.role}
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.phone != null and query.phone != ''">
+                AND phone LIKE CONCAT('%', #{query.phone}, '%')
+            </if>
+            <if test="query.department != null and query.department != ''">
+                AND department LIKE CONCAT('%', #{query.department}, '%')
+            </if>
+            <if test="query.position != null and query.position != ''">
+                AND position LIKE CONCAT('%', #{query.position}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 批量删除用户 -->
+    <delete id="deleteBatch" parameterType="java.util.List">
+        DELETE FROM users WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper> 
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shipping.mapper.VoyageMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="VoyageResultMap" type="com.shipping.model.entity.Voyage">
+        <id column="id" property="id"/>
+        <result column="voyage_number" property="voyageNumber"/>
+        <result column="route_id" property="routeId"/>
+        <result column="ship_id" property="shipId"/>
+        <result column="departure_date" property="departureDate"/>
+        <result column="arrival_date" property="arrivalDate"/>
+        <result column="actual_departure_date" property="actualDepartureDate"/>
+        <result column="actual_arrival_date" property="actualArrivalDate"/>
+        <result column="status" property="status"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <!-- 插入航次 -->
+    <insert id="insert" parameterType="com.shipping.model.entity.Voyage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO voyages (
+            voyage_number, route_id, ship_id, departure_date, arrival_date,
+            actual_departure_date, actual_arrival_date, status, created_at, updated_at
+        ) VALUES (
+            #{voyageNumber}, #{routeId}, #{shipId}, #{departureDate}, #{arrivalDate},
+            #{actualDepartureDate}, #{actualArrivalDate}, #{status}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 根据ID删除航次 -->
+    <delete id="deleteById" parameterType="Long">
+        DELETE FROM voyages WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新航次 -->
+    <update id="updateById" parameterType="com.shipping.model.entity.Voyage">
+        UPDATE voyages SET
+            voyage_number = #{voyageNumber},
+            route_id = #{routeId},
+            ship_id = #{shipId},
+            departure_date = #{departureDate},
+            arrival_date = #{arrivalDate},
+            actual_departure_date = #{actualDepartureDate},
+            actual_arrival_date = #{actualArrivalDate},
+            status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询航次 -->
+    <select id="selectById" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages WHERE id = #{id}
+    </select>
+
+    <!-- 根据航次编号查询航次 -->
+    <select id="selectByVoyageNumber" parameterType="String" resultMap="VoyageResultMap">
+        SELECT * FROM voyages WHERE voyage_number = #{voyageNumber}
+    </select>
+
+    <!-- 检查航次编号是否存在 -->
+    <select id="existsByVoyageNumber" resultType="boolean">
+        SELECT COUNT(1) &gt; 0 FROM voyages 
+        WHERE voyage_number = #{voyageNumber}
+        <if test="excludeId != null">
+            AND id != #{excludeId}
+        </if>
+    </select>
+
+    <!-- 分页查询航次列表 -->
+    <select id="selectPageList" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageResultMap">
+        SELECT * FROM voyages
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND departure_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY departure_date DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 分页查询航次列表（包含关联信息） -->
+    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageResultMap">
+        SELECT v.* FROM voyages v
+        LEFT JOIN routes r ON v.route_id = r.id
+        LEFT JOIN ships s ON v.ship_id = s.id
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND v.voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND v.route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND v.ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND v.status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND v.departure_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND v.departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+        ORDER BY v.departure_date DESC
+        LIMIT #{size} OFFSET #{page * size - size}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectTotal" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultType="long">
+        SELECT COUNT(*) FROM voyages
+        <where>
+            <if test="voyageNumber != null and voyageNumber != ''">
+                AND voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')
+            </if>
+            <if test="routeId != null">
+                AND route_id = #{routeId}
+            </if>
+            <if test="shipId != null">
+                AND ship_id = #{shipId}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="startDate != null">
+                AND departure_date &gt;= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND departure_date <![CDATA[<=]]> #{endDate}
+            </if>
+        </where>
+    </select>
+
+    <!-- 获取所有启用的航次 -->
+    <select id="selectAllActive" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE status IN ('PLANNED', 'IN_PROGRESS')
+        ORDER BY departure_date ASC
+    </select>
+
+    <!-- 根据航线ID查询航次列表 -->
+    <select id="selectByRouteId" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE route_id = #{routeId}
+        ORDER BY departure_date DESC
+    </select>
+
+    <!-- 根据船舶ID查询航次列表 -->
+    <select id="selectByShipId" parameterType="Long" resultMap="VoyageResultMap">
+        SELECT * FROM voyages 
+        WHERE ship_id = #{shipId}
+        ORDER BY departure_date DESC
+    </select>
+
+    <!-- 更新航次状态 -->
+    <update id="updateStatus">
+        UPDATE voyages SET 
+            status = #{status}, 
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper> 
