@@ -10,7 +10,7 @@ import com.shipping.util.JwtUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.stereotype.Service;
 
 /**
@@ -24,8 +24,7 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -38,8 +37,8 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessException("用户名或密码错误");
         }
 
-        // 验证密码
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
+        // 验证密码（使用明文比较）
+        if (!loginRequest.getPassword().equals(user.getPassword())) {
             throw new BusinessException("用户名或密码错误");
         }
 
