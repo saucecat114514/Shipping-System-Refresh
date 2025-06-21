@@ -37,11 +37,11 @@ public class MapServiceImpl implements MapService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${map.api.key:}")
-    private String mapApiKey;
+    @Value("${amap.key}")
+    private String amapKey;
 
-    @Value("${map.api.base-url:https://api.map-service.com}")
-    private String mapApiBaseUrl;
+    @Value("${amap.web-api-url}")
+    private String amapWebApiUrl;
 
     // 地球半径（公里）
     private static final double EARTH_RADIUS = 6371.0;
@@ -51,24 +51,36 @@ public class MapServiceImpl implements MapService {
         logger.info("地理编码查询：{}", address);
         
         try {
-            // 模拟地理编码服务调用
-            // 实际实现中应该调用真实的地图API，如高德地图、百度地图等
+            // 调用高德地图地理编码API
+            String url = String.format("%s/geocode/geo?key=%s&address=%s", 
+                amapWebApiUrl, amapKey, address);
             
-            // 这里使用模拟数据
-            if (address.contains("上海")) {
-                return new LocationRequest(new BigDecimal("121.4648"), new BigDecimal("31.2304"));
-            } else if (address.contains("北京")) {
-                return new LocationRequest(new BigDecimal("116.4074"), new BigDecimal("39.9042"));
-            } else if (address.contains("深圳")) {
-                return new LocationRequest(new BigDecimal("114.0579"), new BigDecimal("22.5431"));
+            logger.info("调用高德地图API: {}", url);
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && "1".equals(response.get("status"))) {
+                List<Map<String, Object>> geocodes = (List<Map<String, Object>>) response.get("geocodes");
+                if (geocodes != null && !geocodes.isEmpty()) {
+                    Map<String, Object> geocode = geocodes.get(0);
+                    String location = (String) geocode.get("location");
+                    if (location != null && !location.isEmpty()) {
+                        String[] coords = location.split(",");
+                        BigDecimal longitude = new BigDecimal(coords[0]);
+                        BigDecimal latitude = new BigDecimal(coords[1]);
+                        return new LocationRequest(longitude, latitude);
+                    }
+                }
             }
             
-            // 默认返回上海坐标
+            logger.warn("地理编码失败，返回默认坐标（上海）");
+            // 如果API调用失败，返回默认坐标（上海）
             return new LocationRequest(new BigDecimal("121.4648"), new BigDecimal("31.2304"));
             
         } catch (Exception e) {
-            logger.error("地理编码失败：{}", e.getMessage());
-            throw new BusinessException("地理编码服务异常");
+            logger.error("地理编码调用失败：{}", e.getMessage());
+            // 调用失败时返回默认坐标
+            return new LocationRequest(new BigDecimal("121.4648"), new BigDecimal("31.2304"));
         }
     }
 
@@ -77,24 +89,30 @@ public class MapServiceImpl implements MapService {
         logger.info("逆地理编码查询：经度{}，纬度{}", location.getLongitude(), location.getLatitude());
         
         try {
-            // 模拟逆地理编码服务调用
-            double lng = location.getLongitude().doubleValue();
-            double lat = location.getLatitude().doubleValue();
+            // 调用高德地图逆地理编码API
+            String url = String.format("%s/geocode/regeo?key=%s&location=%s,%s", 
+                amapWebApiUrl, amapKey, 
+                location.getLongitude(), location.getLatitude());
             
-            // 根据坐标范围判断大致位置
-            if (lng > 120 && lng < 122 && lat > 30 && lat < 32) {
-                return "上海市";
-            } else if (lng > 115 && lng < 117 && lat > 39 && lat < 41) {
-                return "北京市";
-            } else if (lng > 113 && lng < 115 && lat > 22 && lat < 24) {
-                return "深圳市";
+            logger.info("调用高德地图API: {}", url);
+            
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && "1".equals(response.get("status"))) {
+                Map<String, Object> regeocode = (Map<String, Object>) response.get("regeocode");
+                if (regeocode != null) {
+                    String formattedAddress = (String) regeocode.get("formatted_address");
+                    if (formattedAddress != null && !formattedAddress.isEmpty()) {
+                        return formattedAddress;
+                    }
+                }
             }
             
             return "未知位置";
             
         } catch (Exception e) {
-            logger.error("逆地理编码失败：{}", e.getMessage());
-            throw new BusinessException("逆地理编码服务异常");
+            logger.error("逆地理编码调用失败：{}", e.getMessage());
+            return "位置解析失败";
         }
     }
 

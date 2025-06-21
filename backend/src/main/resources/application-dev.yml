@@ -8,7 +8,7 @@ spring:
     name: shipping-system
   
   datasource:
-    url: jdbc:mysql://localhost:3306/shipping_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8
+    url: jdbc:mysql://localhost:3306/shipping_system?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=GMT%2B8
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -47,8 +47,16 @@ jwt:
 
 # 高德地图API配置
 amap:
-  key: your-amap-api-key
+  key: f2163136e1dae2878a9962e856a5f125
+  security-key: 667209110967108e9147938bfc123095
   web-api-url: https://restapi.amap.com/v3
+  web-service-url: https://restapi.amap.com/v4
+
+# 地图服务配置
+map:
+  api:
+    key: f2163136e1dae2878a9962e856a5f125
+    base-url: https://restapi.amap.com/v3
 
 # Swagger文档配置
 springdoc:

@@ -126,11 +126,12 @@ export const EL_CONFIG = {
 export const MAP_CONFIG = {
   // 高德地图配置
   AMAP: {
-    KEY: '', // 高德地图API密钥
+    KEY: 'f2163136e1dae2878a9962e856a5f125', // 高德地图API密钥
+    SECURITY_KEY: '667209110967108e9147938bfc123095', // 高德地图安全密钥
     VERSION: '2.0',
-    PLUGINS: ['AMap.Geocoder', 'AMap.AutoComplete']
+    PLUGINS: ['AMap.Geocoder', 'AMap.AutoComplete', 'AMap.PlaceSearch', 'AMap.DistrictSearch']
   },
-  // 默认中心点 (中国)
-  CENTER: [116.397428, 39.90923],
+  // 默认中心点 (中国上海)
+  CENTER: [121.4648, 31.2304],
   ZOOM: 5
 } 

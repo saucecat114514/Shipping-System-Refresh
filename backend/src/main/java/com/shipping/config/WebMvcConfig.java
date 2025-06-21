@@ -22,7 +22,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
+        // 可以在这里添加拦截器、错误处理等配置
+        return restTemplate;
     }
 
     @Override
