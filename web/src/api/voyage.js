@@ -43,6 +43,14 @@ export function getVoyageDetail(id) {
   })
 }
 
+// 获取航次详情（包含港口信息）
+export function getVoyageDetailWithPorts(id) {
+  return request({
+    url: `/voyages/${id}/details`,
+    method: 'get'
+  })
+}
+
 // 更新航次状态
 export function updateVoyageStatus(id, data) {
   return request({

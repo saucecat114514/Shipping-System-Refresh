@@ -90,6 +90,18 @@ public class OrderServiceImpl implements OrderService {
             order.setAdditionalFees(BigDecimal.ZERO);
         }
         
+        // 计算并设置基础价格
+        if (order.getBasePrice() == null) {
+            BigDecimal basePrice = calculateBasePriceInternal(orderRequest, orderRequest.getRouteId());
+            order.setBasePrice(basePrice);
+        }
+        
+        // 计算并设置总价格
+        if (order.getTotalPrice() == null) {
+            BigDecimal totalPrice = order.getBasePrice().add(order.getAdditionalFees());
+            order.setTotalPrice(totalPrice);
+        }
+        
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
 
@@ -372,14 +384,32 @@ public class OrderServiceImpl implements OrderService {
      * 计算基础运价
      */
     private BigDecimal calculateBasePriceInternal(OrderRequest orderRequest, Long routeId) {
-        Route route = routeMapper.selectById(routeId);
-        if (route == null) {
-            throw new BusinessException("航线不存在，ID：" + routeId);
+        BigDecimal distance;
+        
+        if (routeId != null) {
+            Route route = routeMapper.selectById(routeId);
+            if (route == null) {
+                throw new BusinessException("航线不存在，ID：" + routeId);
+            }
+            // 使用海里距离而不是公里距离
+            distance = route.getDistanceNm();
+            if (distance == null) {
+                // 如果海里距离为空，从公里距离计算
+                BigDecimal distanceKm = route.getDistance();
+                if (distanceKm != null) {
+                    distance = distanceKm.divide(new BigDecimal("1.852"), 2, BigDecimal.ROUND_HALF_UP);
+                } else {
+                    distance = new BigDecimal("500");
+                }
+            }
+        } else {
+            // 如果没有指定路线，使用默认距离（500海里）
+            distance = new BigDecimal("500");
         }
 
-        // 基础运价 = 货物重量 × 航程距离 × 基础费率
+        // 基础运价 = 货物重量 × 航程距离（海里） × 基础费率
         BigDecimal basePrice = orderRequest.getCargoWeight()
-                .multiply(route.getDistance())
+                .multiply(distance)
                 .multiply(BASE_RATE);
 
         // 加急订单费率上浮20%

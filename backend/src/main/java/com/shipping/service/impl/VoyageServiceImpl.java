@@ -174,6 +174,15 @@ public class VoyageServiceImpl implements VoyageService {
     }
 
     @Override
+    public Result<Voyage> getVoyageByIdWithDetails(Long id) {
+        Voyage voyage = voyageMapper.selectByIdWithDetails(id);
+        if (voyage == null) {
+            throw new BusinessException("航次不存在，ID：" + id);
+        }
+        return Result.success(voyage);
+    }
+
+    @Override
     public Result<Voyage> getVoyageByVoyageNumber(String voyageNumber) {
         Voyage voyage = voyageMapper.selectByVoyageNumber(voyageNumber);
         if (voyage == null) {

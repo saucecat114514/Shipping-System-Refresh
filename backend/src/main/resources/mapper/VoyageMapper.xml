@@ -18,6 +18,56 @@
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
 
+    <!-- 包含港口信息的结果映射 -->
+    <resultMap id="VoyageWithPortsResultMap" type="com.shipping.model.entity.Voyage">
+        <id column="v_id" property="id"/>
+        <result column="v_voyage_number" property="voyageNumber"/>
+        <result column="v_route_id" property="routeId"/>
+        <result column="v_ship_id" property="shipId"/>
+        <result column="v_departure_date" property="departureDate"/>
+        <result column="v_arrival_date" property="arrivalDate"/>
+        <result column="v_actual_departure_date" property="actualDepartureDate"/>
+        <result column="v_actual_arrival_date" property="actualArrivalDate"/>
+        <result column="v_status" property="status"/>
+        <result column="v_created_at" property="createdAt"/>
+        <result column="v_updated_at" property="updatedAt"/>
+        
+        <!-- 关联航线信息（包含港口信息） -->
+        <association property="route" javaType="com.shipping.model.entity.Route">
+            <id column="r_id" property="id"/>
+            <result column="r_route_number" property="routeNumber"/>
+            <result column="r_name" property="name"/>
+            <result column="r_origin_port_id" property="originPortId"/>
+            <result column="r_destination_port_id" property="destinationPortId"/>
+            <result column="r_distance" property="distance"/>
+            <result column="r_distance_nm" property="distanceNm"/>
+            <result column="r_estimated_duration" property="estimatedDuration"/>
+            <result column="r_status" property="status"/>
+            
+            <!-- 出发港口信息 -->
+            <association property="originPort" javaType="com.shipping.model.entity.Port">
+                <id column="op_id" property="id"/>
+                <result column="op_name_cn" property="nameCn"/>
+                <result column="op_name_en" property="nameEn"/>
+                <result column="op_code" property="code"/>
+                <result column="op_country" property="country"/>
+                <result column="op_latitude" property="latitude"/>
+                <result column="op_longitude" property="longitude"/>
+            </association>
+            
+            <!-- 目的港口信息 -->
+            <association property="destinationPort" javaType="com.shipping.model.entity.Port">
+                <id column="dp_id" property="id"/>
+                <result column="dp_name_cn" property="nameCn"/>
+                <result column="dp_name_en" property="nameEn"/>
+                <result column="dp_code" property="code"/>
+                <result column="dp_country" property="country"/>
+                <result column="dp_latitude" property="latitude"/>
+                <result column="dp_longitude" property="longitude"/>
+            </association>
+        </association>
+    </resultMap>
+
     <!-- 包含关联信息的结果映射 -->
     <resultMap id="VoyageWithDetailsResultMap" type="com.shipping.model.entity.Voyage">
         <id column="v_id" property="id"/>
@@ -94,6 +144,54 @@
     <!-- 根据ID查询航次 -->
     <select id="selectById" parameterType="Long" resultMap="VoyageResultMap">
         SELECT * FROM voyages WHERE id = #{id}
+    </select>
+
+    <!-- 根据ID查询航次详情（包含航线和港口信息） -->
+    <select id="selectByIdWithDetails" parameterType="Long" resultMap="VoyageWithPortsResultMap">
+        SELECT 
+            v.id as v_id,
+            v.voyage_number as v_voyage_number,
+            v.route_id as v_route_id,
+            v.ship_id as v_ship_id,
+            v.departure_date as v_departure_date,
+            v.arrival_date as v_arrival_date,
+            v.actual_departure_date as v_actual_departure_date,
+            v.actual_arrival_date as v_actual_arrival_date,
+            v.status as v_status,
+            v.created_at as v_created_at,
+            v.updated_at as v_updated_at,
+            
+            r.id as r_id,
+            r.route_number as r_route_number,
+            r.name as r_name,
+            r.origin_port_id as r_origin_port_id,
+            r.destination_port_id as r_destination_port_id,
+            r.distance as r_distance,
+            r.distance_nm as r_distance_nm,
+            r.estimated_duration as r_estimated_duration,
+            r.status as r_status,
+            
+            op.id as op_id,
+            op.name_cn as op_name_cn,
+            op.name_en as op_name_en,
+            op.code as op_code,
+            op.country as op_country,
+            op.latitude as op_latitude,
+            op.longitude as op_longitude,
+            
+            dp.id as dp_id,
+            dp.name_cn as dp_name_cn,
+            dp.name_en as dp_name_en,
+            dp.code as dp_code,
+            dp.country as dp_country,
+            dp.latitude as dp_latitude,
+            dp.longitude as dp_longitude
+            
+        FROM voyages v
+        LEFT JOIN routes r ON v.route_id = r.id
+        LEFT JOIN ports op ON r.origin_port_id = op.id
+        LEFT JOIN ports dp ON r.destination_port_id = dp.id
+        WHERE v.id = #{id}
     </select>
 
     <!-- 根据航次编号查询航次 -->

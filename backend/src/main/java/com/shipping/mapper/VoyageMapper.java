@@ -34,6 +34,11 @@ public interface VoyageMapper {
     Voyage selectById(Long id);
 
     /**
+     * 根据ID查询航次详情（包含航线和港口信息）
+     */
+    Voyage selectByIdWithDetails(Long id);
+
+    /**
      * 根据航次编号查询航次
      */
     Voyage selectByVoyageNumber(String voyageNumber);

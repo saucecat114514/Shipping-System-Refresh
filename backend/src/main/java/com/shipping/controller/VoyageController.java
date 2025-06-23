@@ -69,6 +69,16 @@ public class VoyageController {
     }
 
     /**
+     * 根据ID查询航次详情（包含港口信息）
+     */
+    @Operation(summary = "查询航次详情（含港口信息）", description = "根据ID查询航次详细信息，包含航线和港口信息")
+    @GetMapping("/{id}/details")
+    public Result<Voyage> getVoyageByIdWithDetails(
+            @Parameter(description = "航次ID") @PathVariable Long id) {
+        return voyageService.getVoyageByIdWithDetails(id);
+    }
+
+    /**
      * 根据编号查询航次
      */
     @Operation(summary = "根据编号查询航次", description = "根据航次编号查询航次信息")

@@ -7,8 +7,10 @@ import com.shipping.model.entity.Order;
 import com.shipping.model.entity.User;
 import com.shipping.model.dto.OrderRequest;
 import com.shipping.model.dto.OrderQueryRequest;
+import com.shipping.model.dto.OrderPriceInfo;
 import com.shipping.service.OrderService;
 import com.shipping.service.UserService;
+import com.shipping.service.VoyageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,9 @@ public class OrderController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private VoyageService voyageService;
+
     /**
      * 创建订单
      */
@@ -60,8 +65,14 @@ public class OrderController {
                 orderRequest.setCustomerId(currentUser.getId());
             }
         }
+
+        // 如果选择了航次，将航次ID设置到订单的voyageId字段
+        if (orderRequest.getSelectedVoyageId() != null) {
+            logger.info("设置订单航次ID: {}", orderRequest.getSelectedVoyageId());
+            orderRequest.setVoyageId(orderRequest.getSelectedVoyageId());
+        }
         
-        logger.info("最终customerId: {}", orderRequest.getCustomerId());
+        logger.info("最终customerId: {}, voyageId: {}", orderRequest.getCustomerId(), orderRequest.getVoyageId());
         
         return orderService.createOrder(orderRequest);
     }
@@ -198,6 +209,65 @@ public class OrderController {
             @Parameter(description = "订单ID") @PathVariable Long orderId,
             @Parameter(description = "航次ID") @RequestParam Long voyageId) {
         return orderService.confirmOrder(orderId, voyageId);
+    }
+
+    /**
+     * 计算订单总价格
+     */
+    @Operation(summary = "计算订单价格", description = "根据订单信息计算基础运价、附加费用和总价格")
+    @PostMapping("/calculate-price")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
+    public Result<OrderPriceInfo> calculateOrderPrice(@RequestBody OrderRequest orderRequest) {
+        logger.info("价格计算请求 - 货物重量: {}, 货物类型: {}, 选择航次ID: {}, 是否加急: {}", 
+                   orderRequest.getCargoWeight(), orderRequest.getCargoType(), 
+                   orderRequest.getSelectedVoyageId(), orderRequest.getIsUrgent());
+        
+        try {
+            Long routeId = null;
+            
+            // 如果选择了航次，从航次获取航线ID
+            if (orderRequest.getSelectedVoyageId() != null) {
+                var voyageResult = voyageService.getVoyageById(orderRequest.getSelectedVoyageId());
+                if (voyageResult.getCode() == 200 && voyageResult.getData() != null) {
+                    var voyage = voyageResult.getData();
+                    routeId = voyage.getRouteId();
+                    logger.info("从航次 {} 获取到航线ID: {}", orderRequest.getSelectedVoyageId(), routeId);
+                } else {
+                    logger.warn("找不到航次: {}", orderRequest.getSelectedVoyageId());
+                }
+            }
+            
+            // 如果没有从航次获取到航线，使用直接传入的routeId（向后兼容）
+            if (routeId == null) {
+                routeId = orderRequest.getRouteId();
+            }
+            
+            // 计算基础运价
+            Result<BigDecimal> basePriceResult = orderService.calculateBasePrice(orderRequest, routeId);
+            BigDecimal basePrice = basePriceResult.getData();
+            logger.info("基础运价计算结果: {}", basePrice);
+            
+            // 计算附加费用
+            Result<BigDecimal> additionalFeesResult = orderService.calculateAdditionalFees(orderRequest);
+            BigDecimal additionalFees = additionalFeesResult.getData();
+            logger.info("附加费用计算结果: {}", additionalFees);
+            
+            // 计算总价格
+            BigDecimal totalPrice = basePrice.add(additionalFees);
+            logger.info("总价格: {}", totalPrice);
+            
+            // 构造返回对象
+            OrderPriceInfo priceInfo = new OrderPriceInfo();
+            priceInfo.setBasePrice(basePrice);
+            priceInfo.setAdditionalFees(additionalFees);
+            priceInfo.setTotalPrice(totalPrice);
+            
+            logger.info("价格计算成功");
+            return Result.success(priceInfo);
+        } catch (Exception e) {
+            logger.error("价格计算失败", e);
+            throw e;
+        }
     }
 
     /**

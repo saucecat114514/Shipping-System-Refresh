@@ -24,6 +24,12 @@ public class OrderRequest {
     @Schema(description = "航次ID（可选，订单确认时分配）", example = "1")
     private Long voyageId;
 
+    @Schema(description = "航线ID（用于计算运费）", example = "1")
+    private Long routeId;
+
+    @Schema(description = "选择的航次ID（用于订单创建时的航次选择）", example = "1")
+    private Long selectedVoyageId;
+
     @Schema(description = "货物名称", example = "集装箱货物")
     @NotBlank(message = "货物名称不能为空")
     @Size(max = 100, message = "货物名称长度不能超过100字符")
@@ -89,6 +95,22 @@ public class OrderRequest {
 
     public void setVoyageId(Long voyageId) {
         this.voyageId = voyageId;
+    }
+
+    public Long getRouteId() {
+        return routeId;
+    }
+
+    public void setRouteId(Long routeId) {
+        this.routeId = routeId;
+    }
+
+    public Long getSelectedVoyageId() {
+        return selectedVoyageId;
+    }
+
+    public void setSelectedVoyageId(Long selectedVoyageId) {
+        this.selectedVoyageId = selectedVoyageId;
     }
 
     public String getCargoName() {

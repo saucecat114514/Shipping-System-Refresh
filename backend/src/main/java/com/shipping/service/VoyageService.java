@@ -34,6 +34,11 @@ public interface VoyageService {
     Result<Voyage> getVoyageById(Long id);
 
     /**
+     * 根据ID查询航次详情（包含航线和港口信息）
+     */
+    Result<Voyage> getVoyageByIdWithDetails(Long id);
+
+    /**
      * 根据航次编号查询航次
      */
     Result<Voyage> getVoyageByVoyageNumber(String voyageNumber);
