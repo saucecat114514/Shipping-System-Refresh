@@ -1,11 +1,17 @@
 package com.shipping.controller;
 
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
+import com.shipping.exception.BusinessException;
 import com.shipping.model.dto.LoginRequest;
 import com.shipping.model.dto.LoginResponse;
+import com.shipping.model.dto.RegisterRequest;
+import com.shipping.model.entity.User;
 import com.shipping.service.AuthService;
+import com.shipping.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+    
+    @Autowired
+    private UserService userService;
 
     /**
      * 用户登录
@@ -37,6 +46,20 @@ public class AuthController {
         
         logger.info("用户 {} 登录成功", loginRequest.getUsername());
         return Result.success("登录成功", loginResponse);
+    }
+
+    /**
+     * 用户注册
+     */
+    @Operation(summary = "用户注册", description = "新用户注册，默认角色为客户")
+    @PostMapping("/register")
+    public Result<LoginResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+        logger.info("用户注册请求: {}", registerRequest.getUsername());
+        
+        LoginResponse registerResponse = authService.register(registerRequest);
+        
+        logger.info("用户 {} 注册成功", registerRequest.getUsername());
+        return Result.success("注册成功", registerResponse);
     }
 
     /**
@@ -57,13 +80,20 @@ public class AuthController {
     /**
      * 获取当前用户信息
      */
-    @Operation(summary = "获取当前用户信息", description = "根据token获取当前登录用户的信息")
-    @GetMapping("/current")
-    public Result<LoginResponse> getCurrentUser(@RequestHeader("Authorization") String token) {
-        logger.info("获取当前用户信息请求");
+    @Operation(summary = "获取当前用户信息", description = "获取当前登录用户的详细信息")
+    @GetMapping("/current-user")
+    @RequireRole(value = {}, requireLogin = true)
+    public Result<User> getCurrentUser(HttpServletRequest request) {
+        String currentUsername = (String) request.getAttribute("currentUser");
+        if (currentUsername == null) {
+            throw new BusinessException("未获取到当前用户信息");
+        }
         
-        LoginResponse userInfo = authService.getCurrentUser(token);
+        User user = userService.getUserByUsername(currentUsername);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
         
-        return Result.success("获取用户信息成功", userInfo);
+        return Result.success(user);
     }
 } 

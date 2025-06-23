@@ -9,6 +9,15 @@ export function login(data) {
   })
 }
 
+// 用户注册
+export function register(data) {
+  return request({
+    url: '/auth/register',
+    method: 'post',
+    data
+  })
+}
+
 // 用户登出
 export function logout() {
   return request({
@@ -20,7 +29,7 @@ export function logout() {
 // 获取当前用户信息
 export function getCurrentUser() {
   return request({
-    url: '/auth/current',
+    url: '/auth/current-user',
     method: 'get'
   })
 }

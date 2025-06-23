@@ -56,6 +56,11 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单编号已存在：" + orderRequest.getOrderNumber());
         }
 
+        // 检查客户ID是否提供
+        if (orderRequest.getCustomerId() == null) {
+            throw new BusinessException("客户ID不能为空");
+        }
+
         // 检查客户是否存在
         User customer = userMapper.findById(orderRequest.getCustomerId());
         if (customer == null) {

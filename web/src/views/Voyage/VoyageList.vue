@@ -10,8 +10,20 @@
       @edit="handleEdit"
     >
       <!-- 自定义列插槽 -->
+      <template #routeName="{ row }">
+        {{ row.route ? row.route.name : '未分配航线' }}
+      </template>
+      
+      <template #shipName="{ row }">
+        {{ row.ship ? row.ship.name : '未分配船舶' }}
+      </template>
+      
       <template #route="{ row }">
-        {{ row.startPort }} → {{ row.endPort }}
+        {{ row.route ? row.route.name : '未分配航线' }}
+      </template>
+      
+      <template #deadweightTonnage="{ row }">
+        {{ row.ship ? (row.ship.deadweightTonnage || 0) : 0 }}
       </template>
       
       <template #status="{ row }">
@@ -185,13 +197,13 @@ import { getShipList } from '@/api/ship'
 // 表格列配置
 const columns = [
   { prop: 'voyageNumber', label: '航次编号', width: 150 },
-  { prop: 'route.name', label: '航线名称', width: 150 },
-  { prop: 'ship.name', label: '船舶名称', width: 120 },
+  { prop: 'routeName', label: '航线名称', width: 150, slot: 'routeName' },
+  { prop: 'shipName', label: '船舶名称', width: 120, slot: 'shipName' },
   { prop: 'route', label: '航线', width: 200, slot: 'route' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
   { prop: 'departureDate', label: '计划出发', width: 160 },
   { prop: 'arrivalDate', label: '计划到达', width: 160 },
-  { prop: 'ship.deadweightTonnage', label: '载重量(吨)', width: 120, align: 'right' },
+  { prop: 'deadweightTonnage', label: '载重量(吨)', width: 120, align: 'right', slot: 'deadweightTonnage' },
   { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
 ]
 
@@ -303,27 +315,8 @@ const loadVoyageData = async (params) => {
     const result = await getVoyageList(params)
     console.log('航次API原始响应:', result)
     
-    // 确保返回正确的数据结构给DataTable
-    // API返回: {code: 200, data: {records: [...], total: 100}}
-    // request拦截器解包后: {records: [...], total: 100}
-    // DataTable期望: {records: [...], total: 100}
-    if (result && result.records) {
-      console.log('航次数据加载成功，records数量:', result.records.length)
-      return result
-    } else if (result && Array.isArray(result)) {
-      // 如果返回的是数组，包装成分页格式
-      console.log('航次数据为数组格式，转换为分页格式')
-      return {
-        records: result,
-        total: result.length
-      }
-    } else {
-      console.log('航次数据格式异常:', result)
-      return {
-        records: [],
-        total: 0
-      }
-    }
+    // DataTable组件已经处理了result.data解包，这里直接返回即可
+    return result
   } catch (error) {
     console.error('加载航次数据失败:', error)
     throw error

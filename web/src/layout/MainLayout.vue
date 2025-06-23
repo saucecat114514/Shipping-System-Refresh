@@ -19,7 +19,7 @@
           <!-- 有子菜单的项 -->
           <el-sub-menu 
             v-if="item.children && item.children.length > 0" 
-            :key="item.title" 
+            :key="'sub-' + item.title"
             :index="item.title"
           >
             <template #title>
@@ -38,7 +38,7 @@
           <!-- 单个菜单项 -->
           <el-menu-item 
             v-else 
-            :key="item.path" 
+            :key="'item-' + item.path"
             :index="item.path"
           >
             <el-icon><component :is="item.icon" /></el-icon>
@@ -100,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, ArrowDown, SwitchButton, InfoFilled } from '@element-plus/icons-vue'
@@ -125,10 +125,20 @@ const activeMenu = computed(() => route.path)
 
 // 根据用户角色过滤菜单
 const filteredMenuItems = computed(() => {
+  console.log('=== 菜单过滤调试 ===')
+  console.log('用户角色:', userInfo.value.role)
+  console.log('原始菜单数量:', menuItems.length)
+  
   if (!userInfo.value.role) {
+    console.log('用户角色为空，返回空菜单')
     return []
   }
-  return PermissionManager.filterMenuByRole(menuItems, userInfo.value.role)
+  
+  const filtered = PermissionManager.filterMenuByRole(menuItems, userInfo.value.role)
+  console.log('过滤后菜单数量:', filtered.length)
+  console.log('过滤后菜单:', filtered.map(item => ({ title: item.title, path: item.path })))
+  
+  return filtered
 })
 
 // 角色显示名称
@@ -188,6 +198,11 @@ const getUserInfo = () => {
           role: userData.role || '',
           email: userData.email || ''
         }
+        
+        // 用户信息加载完成后再检查权限
+        nextTick(() => {
+          checkPermission()
+        })
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)
@@ -213,10 +228,20 @@ const checkPermission = () => {
   const currentPath = route.path
   const userRole = userInfo.value.role
   
+  // 如果用户角色还没加载，暂时不检查权限
+  if (!userRole) {
+    return
+  }
+  
+  // 对于/dashboard路径，所有登录用户都可以访问
+  if (currentPath === '/dashboard') {
+    return
+  }
+  
   // 检查当前页面是否在用户有权限的菜单中
   const hasAccess = checkPathAccess(filteredMenuItems.value, currentPath)
   
-  if (!hasAccess && currentPath !== '/login') {
+  if (!hasAccess && currentPath !== '/login' && currentPath !== '/register') {
     ElMessage.error('您没有权限访问该页面')
     router.push('/dashboard')
   }
@@ -237,13 +262,15 @@ const checkPathAccess = (menuItems, targetPath) => {
 
 onMounted(() => {
   getUserInfo()
-  checkPermission()
 })
 
 // 监听路由变化，检查权限
 import { watch } from 'vue'
 watch(() => route.path, () => {
-  checkPermission()
+  // 确保用户信息已加载后再检查权限
+  if (userInfo.value.role) {
+    checkPermission()
+  }
 })
 </script>
 

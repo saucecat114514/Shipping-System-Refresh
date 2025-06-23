@@ -10,12 +10,12 @@
       @edit="handleEdit"
     >
       <!-- 自定义列插槽 -->
-      <template #route="{ row }">
-        {{ row.startPort }} → {{ row.endPort }}
+      <template #customerName="{ row }">
+        {{ row.customer ? row.customer.realName : '未知客户' }}
       </template>
       
-      <template #transportMode="{ row }">
-        <el-tag>{{ getTransportModeLabel(row.transportMode) }}</el-tag>
+      <template #departureDate="{ row }">
+        {{ row.voyage ? (row.voyage.departureDate ? row.voyage.departureDate.substring(0, 10) : '未安排') : '无航次' }}
       </template>
 
       <template #status="{ row }">
@@ -240,12 +240,12 @@ import { getPortList } from '@/api/port'
 // 表格列配置
 const columns = [
   { prop: 'orderNumber', label: '订单编号', width: 180 },
-  { prop: 'customer.realName', label: '客户名称', width: 150 },
-  { prop: 'route', label: '运输路线', width: 200, slot: 'route' },
-  { prop: 'cargoType', label: '运输方式', width: 100 },
+  { prop: 'customerName', label: '客户名称', width: 150, slot: 'customerName' },
+  { prop: 'cargoName', label: '货物名称', width: 150 },
+  { prop: 'cargoType', label: '货物类型', width: 120 },
   { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, align: 'right' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'voyage.departureDate', label: '预计发货', width: 120 },
+  { prop: 'departureDate', label: '预计发货', width: 150, slot: 'departureDate' },
   { prop: 'totalPrice', label: '运费', width: 100, align: 'right' },
   { prop: 'createdAt', label: '创建时间', width: 160 },
   { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
@@ -396,27 +396,8 @@ const loadOrderData = async (params) => {
     const result = await getOrderList(params)
     console.log('订单API原始响应:', result)
     
-    // 确保返回正确的数据结构给DataTable
-    // API返回: {code: 200, data: {records: [...], total: 100}}
-    // request拦截器解包后: {records: [...], total: 100}
-    // DataTable期望: {records: [...], total: 100}
-    if (result && result.records) {
-      console.log('订单数据加载成功，records数量:', result.records.length)
-      return result
-    } else if (result && Array.isArray(result)) {
-      // 如果返回的是数组，包装成分页格式
-      console.log('订单数据为数组格式，转换为分页格式')
-      return {
-        records: result,
-        total: result.length
-      }
-    } else {
-      console.log('订单数据格式异常:', result)
-      return {
-        records: [],
-        total: 0
-      }
-    }
+    // DataTable组件已经处理了result.data解包，这里直接返回即可
+    return result
   } catch (error) {
     console.error('加载订单数据失败:', error)
     throw error

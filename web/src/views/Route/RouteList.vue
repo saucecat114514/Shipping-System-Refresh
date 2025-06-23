@@ -11,7 +11,7 @@
     >
       <!-- 自定义列插槽 -->
       <template #route="{ row }">
-        {{ row.startPort }} → {{ row.endPort }}
+        {{ row.originPort ? row.originPort.nameCn : '未知港口' }} → {{ row.destinationPort ? row.destinationPort.nameCn : '未知港口' }}
       </template>
       
       <template #status="{ row }">

@@ -4,6 +4,7 @@ import com.shipping.common.PageResult;
 import com.shipping.common.Result;
 import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Order;
+import com.shipping.model.entity.User;
 import com.shipping.model.dto.OrderRequest;
 import com.shipping.model.dto.OrderQueryRequest;
 import com.shipping.service.OrderService;
@@ -12,6 +13,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +30,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/orders")
 public class OrderController {
 
+    private static final Logger logger = LoggerFactory.getLogger(OrderController.class);
+
     @Autowired
     private OrderService orderService;
     
@@ -39,7 +44,25 @@ public class OrderController {
     @Operation(summary = "创建订单", description = "添加新的订单信息")
     @PostMapping
     @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
-    public Result<Order> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
+    public Result<Order> createOrder(@Valid @RequestBody OrderRequest orderRequest, HttpServletRequest request) {
+        // 获取当前用户信息
+        String currentUsername = (String) request.getAttribute("currentUser");
+        String currentUserRole = (String) request.getAttribute("currentUserRole");
+        
+        logger.info("创建订单请求 - 用户: {}, 角色: {}, 原始customerId: {}", 
+                   currentUsername, currentUserRole, orderRequest.getCustomerId());
+        
+        // 如果是客户角色，自动设置客户ID为当前用户
+        if ("CUSTOMER".equals(currentUserRole) && currentUsername != null) {
+            User currentUser = userService.getUserByUsername(currentUsername);
+            if (currentUser != null) {
+                logger.info("自动设置customerId从 {} 到 {}", orderRequest.getCustomerId(), currentUser.getId());
+                orderRequest.setCustomerId(currentUser.getId());
+            }
+        }
+        
+        logger.info("最终customerId: {}", orderRequest.getCustomerId());
+        
         return orderService.createOrder(orderRequest);
     }
 

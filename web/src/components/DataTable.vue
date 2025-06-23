@@ -192,9 +192,11 @@ const loadTableData = async () => {
       ...searchForm
     }
     const result = await props.loadData(params)
+    // 处理后端统一返回格式：{code, msg, data}
+    const data = result.data || result
     // 兼容不同的数据结构：records (PageResult) 或 list (其他格式) 或直接数组
-    tableData.value = result.records || result.list || result || []
-    total.value = result.total || 0
+    tableData.value = data.records || data.list || data || []
+    total.value = data.total || 0
   } catch (error) {
     console.error('加载数据失败:', error)
     ElMessage.error('加载数据失败')

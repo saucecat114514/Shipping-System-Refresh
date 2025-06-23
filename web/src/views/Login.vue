@@ -12,6 +12,11 @@
         <el-form-item>
           <el-button type="primary" @click="handleLogin">登录</el-button>
         </el-form-item>
+        <el-form-item>
+          <div class="register-link">
+            还没有账号？<el-link type="primary" @click="goToRegister">立即注册</el-link>
+          </div>
+        </el-form-item>
       </el-form>
     </el-card>
   </div>
@@ -49,9 +54,9 @@ const handleLogin = () => {
           password: loginForm.password
         });
         
-        const token = response.token;
+        const token = response.data.token;
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(response));
+        localStorage.setItem('user', JSON.stringify(response.data));
         ElMessage.success('登录成功');
         router.push('/dashboard');
       } catch (error) {
@@ -60,6 +65,10 @@ const handleLogin = () => {
     }
   });
 };
+
+const goToRegister = () => {
+  router.push('/register');
+};
 </script>
 
 <style scoped>
@@ -67,44 +76,32 @@ const handleLogin = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f5f7fa;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .login-card {
   width: 400px;
   padding: 30px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .login-title {
   text-align: center;
-  margin-bottom: 20px;
   font-size: 24px;
-  color: #333333;
+  font-weight: bold;
+  margin-bottom: 30px;
+  color: #333;
 }
 
-:deep(.el-form-item__label) {
-  color: #666666;
-  font-size: 14px;
-}
-
-:deep(.el-input) {
+.el-button {
   width: 100%;
 }
 
-:deep(.el-button) {
-  width: 100%;
+.register-link {
+  text-align: center;
   margin-top: 10px;
-  background-color: #0071e3;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-}
-
-:deep(.el-button:hover) {
-  background-color: #0050b3;
+  color: #666;
 }
 </style>

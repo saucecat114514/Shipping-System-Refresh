@@ -19,7 +19,6 @@ public class OrderRequest {
     private String orderNumber;
 
     @Schema(description = "客户ID", example = "1")
-    @NotNull(message = "客户ID不能为空")
     private Long customerId;
 
     @Schema(description = "航次ID（可选，订单确认时分配）", example = "1")

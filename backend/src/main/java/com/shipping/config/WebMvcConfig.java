@@ -41,6 +41,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                     "/auth/login",
+                    "/auth/register",
                     "/auth/logout", 
                     "/test/**",
                     "/system-config/public/**",
