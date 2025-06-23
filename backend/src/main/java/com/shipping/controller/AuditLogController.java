@@ -17,7 +17,7 @@ import jakarta.validation.Valid;
  * 审计日志控制器
  */
 @RestController
-@RequestMapping("/api/audit-logs")
+@RequestMapping("/audit-logs")
 @Tag(name = "审计日志管理", description = "审计日志相关接口")
 @RequireRole({"ADMIN"})
 public class AuditLogController {

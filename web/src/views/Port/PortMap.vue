@@ -1,21 +1,40 @@
 <template>
-  <div class="port-map">
-    <el-row :gutter="20">
+  <div class="port-map-container">
+    <!-- 顶部工具栏 -->
+    <el-row :gutter="20" style="margin-bottom: 20px;">
       <el-col :span="6">
-        <el-card class="port-list">
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索港口名称、代码或国家"
+          :prefix-icon="Search"
+          clearable
+          @input="filterPorts"
+        />
+      </el-col>
+      <el-col :span="6">
+        <el-button type="primary" @click="fetchPortData" :loading="loading">
+          刷新数据
+        </el-button>
+      </el-col>
+      <el-col :span="6">
+        <div class="port-count">
+          共 {{ filteredPorts.length }} 个港口
+        </div>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20">
+      <!-- 左侧港口列表 -->
+      <el-col :span="8">
+        <el-card class="port-list-card">
           <template #header>
             <div class="card-header">
               <span>港口列表</span>
-              <el-input
-                v-model="searchKeyword"
-                placeholder="搜索港口"
-                prefix-icon="Search"
-                size="small"
-              />
+              <el-tag type="info">{{ filteredPorts.length }}</el-tag>
             </div>
           </template>
-          <el-table :data="filteredPorts" style="width: 100%" size="small" height="calc(100vh - 200px)">
-            <el-table-column prop="name" label="港口名称" />
+          <el-table :data="filteredPorts" style="width: 100%" size="small" height="calc(100vh - 200px)" v-loading="loading">
+            <el-table-column prop="nameEn" label="港口名称" />
             <el-table-column prop="country" label="所在国家" />
             <el-table-column label="操作" width="80">
               <template #default="scope">
@@ -28,215 +47,146 @@
         </el-card>
       </el-col>
 
-      <el-col :span="18">
-        <el-card class="map-card">
-          <template #header>
-            <div class="card-header">
-              <span>港口分布</span>
-              <el-radio-group v-model="mapView" size="small" @change="onMapViewChange">
-                <el-radio-button label="all">全部港口</el-radio-button>
-                <el-radio-button label="major">主要港口</el-radio-button>
-                <el-radio-button label="route">航线港口</el-radio-button>
-              </el-radio-group>
-            </div>
-          </template>
-          <div class="map-container">
-            <!-- 高德地图容器 -->
-            <div id="port-map" class="amap-container"></div>
-          </div>
-        </el-card>
+      <!-- 右侧地图和详情 -->
+      <el-col :span="16">
+        <el-row :gutter="20">
+          <!-- 地图 -->
+          <el-col :span="24">
+            <el-card class="map-card">
+              <template #header>
+                <div class="card-header">
+                  <span>港口地图</span>
+                  <el-tag type="success">高德地图</el-tag>
+                </div>
+              </template>
+              <div id="port-map" style="height: 400px; width: 100%;"></div>
+            </el-card>
+          </el-col>
+        </el-row>
 
-        <el-card v-if="selectedPort" class="port-detail">
-          <template #header>
-            <div class="card-header">
-              <span>港口详情 - {{ selectedPort.name }}</span>
-              <el-tag>{{ selectedPort.status }}</el-tag>
-            </div>
-          </template>
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="港口代码">{{ selectedPort.code }}</el-descriptions-item>
-            <el-descriptions-item label="所在国家">{{ selectedPort.country }}</el-descriptions-item>
-            <el-descriptions-item label="时区">{{ selectedPort.timezone }}</el-descriptions-item>
-            <el-descriptions-item label="经度">{{ selectedPort.longitude }}</el-descriptions-item>
-            <el-descriptions-item label="纬度">{{ selectedPort.latitude }}</el-descriptions-item>
-            <el-descriptions-item label="联系方式">{{ selectedPort.contact }}</el-descriptions-item>
-          </el-descriptions>
-
-          <el-divider>港口状态</el-divider>
-          
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <el-statistic title="在港船舶" :value="selectedPort.stats.ships" />
-            </el-col>
-            <el-col :span="8">
-              <el-statistic title="今日到港" :value="selectedPort.stats.arrivals" />
-            </el-col>
-            <el-col :span="8">
-              <el-statistic title="今日离港" :value="selectedPort.stats.departures" />
-            </el-col>
-          </el-row>
-        </el-card>
+        <!-- 港口详情 -->
+        <el-row :gutter="20" style="margin-top: 20px;" v-if="selectedPort">
+          <el-col :span="24">
+            <el-card class="port-detail-card">
+              <template #header>
+                <div class="card-header">
+                  <span>港口详情 - {{ selectedPort.nameEn }}</span>
+                  <el-tag>正常运营</el-tag>
+                </div>
+              </template>
+              <el-descriptions :column="3" border>
+                <el-descriptions-item label="港口代码">{{ selectedPort.code }}</el-descriptions-item>
+                <el-descriptions-item label="所在国家">{{ selectedPort.country }}</el-descriptions-item>
+                <el-descriptions-item label="经度">{{ selectedPort.longitude }}</el-descriptions-item>
+                <el-descriptions-item label="纬度">{{ selectedPort.latitude }}</el-descriptions-item>
+              </el-descriptions>
+            </el-card>
+          </el-col>
+        </el-row>
       </el-col>
     </el-row>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue'
+<script setup>
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { MAP_CONFIG } from '@/utils/constants'
 
 // 响应式数据
 const searchKeyword = ref('')
-const mapView = ref('all')
 const selectedPort = ref(null)
+const loading = ref(false)
+const ports = ref([])
+const filteredPorts = ref([])
 let map = null
 let markers = []
-let infoWindow = null
 
-// 港口数据（扩展版本）
-const ports = [
-  {
-    id: 1,
-    name: '上海港',
-    code: 'SHA',
-    country: '中国',
-    status: '正常运营',
-    timezone: 'UTC+8',
-    longitude: 121.4737,
-    latitude: 31.2304,
-    contact: '+86-21-12345678',
-    type: 'major',
-    stats: {
-      ships: 45,
-      arrivals: 12,
-      departures: 8
-    }
-  },
-  {
-    id: 2,
-    name: '新加坡港',
-    code: 'SIN',
-    country: '新加坡',
-    status: '正常运营',
-    timezone: 'UTC+8',
-    longitude: 103.8198,
-    latitude: 1.2755,
-    contact: '+65-12345678',
-    type: 'major',
-    stats: {
-      ships: 62,
-      arrivals: 15,
-      departures: 13
-    }
-  },
-  {
-    id: 3,
-    name: '青岛港',
-    code: 'QIN',
-    country: '中国',
-    status: '正常运营',
-    timezone: 'UTC+8',
-    longitude: 120.3826,
-    latitude: 36.0673,
-    contact: '+86-532-12345678',
-    type: 'major',
-    stats: {
-      ships: 28,
-      arrivals: 8,
-      departures: 6
-    }
-  },
-  {
-    id: 4,
-    name: '宁波港',
-    code: 'NGB',
-    country: '中国',
-    status: '正常运营',
-    timezone: 'UTC+8',
-    longitude: 121.5562,
-    latitude: 29.8770,
-    contact: '+86-574-12345678',
-    type: 'route',
-    stats: {
-      ships: 23,
-      arrivals: 7,
-      departures: 5
-    }
-  },
-  {
-    id: 5,
-    name: '深圳港',
-    code: 'SHE',
-    country: '中国',
-    status: '正常运营',
-    timezone: 'UTC+8',
-    longitude: 114.0579,
-    latitude: 22.5431,
-    contact: '+86-755-12345678',
-    type: 'major',
-    stats: {
-      ships: 31,
-      arrivals: 9,
-      departures: 7
-    }
-  },
-  {
-    id: 6,
-    name: '釜山港',
-    code: 'PUS',
-    country: '韩国',
-    status: '正常运营',
-    timezone: 'UTC+9',
-    longitude: 129.0756,
-    latitude: 35.1796,
-    contact: '+82-51-12345678',
-    type: 'route',
-    stats: {
-      ships: 19,
-      arrivals: 5,
-      departures: 4
-    }
-  }
-]
+// 地图配置
+const AMAP_KEY = 'f2163136e1dae2878a9962e856a5f125'
+const MAP_CENTER = [121.4648, 31.2304]
 
-// 过滤后的港口列表
-const filteredPorts = computed(() => {
-  let filtered = ports
-  
-  // 根据视图类型过滤
-  if (mapView.value !== 'all') {
-    filtered = filtered.filter(port => port.type === mapView.value)
+// 过滤港口
+const filterPorts = () => {
+  if (!searchKeyword.value) {
+    filteredPorts.value = ports.value
+    return
   }
   
-  // 根据搜索关键词过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    filtered = filtered.filter(port => 
-      port.name.toLowerCase().includes(keyword) ||
-      port.country.toLowerCase().includes(keyword) ||
-      port.code.toLowerCase().includes(keyword)
-    )
-  }
+  const keyword = searchKeyword.value.toLowerCase()
+  filteredPorts.value = ports.value.filter(port => 
+    port.nameEn?.toLowerCase().includes(keyword) ||
+    port.nameCn?.toLowerCase().includes(keyword) ||
+    port.country?.toLowerCase().includes(keyword) ||
+    port.code?.toLowerCase().includes(keyword)
+  )
   
-  return filtered
-})
+  // 重新添加标记
+  if (map) {
+    addPortMarkers()
+  }
+}
+
+// 获取港口数据
+const fetchPortData = async () => {
+  try {
+    loading.value = true
+    console.log('开始获取港口数据...')
+    
+    const response = await fetch('/api/ports/all')
+    const result = await response.json()
+    console.log('API响应:', result)
+    
+    if (result.code === 200) {
+      ports.value = result.data || []
+      filteredPorts.value = ports.value
+      console.log('获取港口数据成功:', ports.value.length, '个港口')
+      
+      // 地图加载完成后添加港口标记
+      if (map) {
+        addPortMarkers()
+      }
+      
+      ElMessage.success(`成功加载 ${ports.value.length} 个港口`)
+    } else {
+      ElMessage.error('获取港口数据失败: ' + result.msg)
+    }
+  } catch (error) {
+    console.error('获取港口数据失败:', error)
+    ElMessage.error('获取港口数据失败，请检查网络连接')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 动态加载高德地图API
+const loadAmapScript = () => {
+  return new Promise((resolve, reject) => {
+    if (window.AMap) {
+      resolve()
+      return
+    }
+    
+    const script = document.createElement('script')
+    script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`
+    script.onload = resolve
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
 
 // 初始化高德地图
 const initMap = async () => {
   try {
+    console.log('开始初始化地图...')
+    await loadAmapScript()
+    console.log('高德地图API加载完成')
+    
     // 创建地图实例
     map = new window.AMap.Map('port-map', {
       zoom: 5,
-      center: MAP_CONFIG.CENTER,
+      center: MAP_CENTER,
       mapStyle: 'amap://styles/normal'
-    })
-
-    // 创建信息窗口
-    infoWindow = new window.AMap.InfoWindow({
-      isCustom: false,
-      autoMove: true
     })
 
     // 地图加载完成后添加港口标记
@@ -245,6 +195,7 @@ const initMap = async () => {
       addPortMarkers()
     })
 
+    console.log('地图初始化成功')
     ElMessage.success('地图加载成功')
   } catch (error) {
     console.error('地图初始化失败:', error)
@@ -254,16 +205,28 @@ const initMap = async () => {
 
 // 添加港口标记
 const addPortMarkers = () => {
+  if (!map) {
+    console.log('地图未初始化，跳过添加标记')
+    return
+  }
+  
   // 清除现有标记
   clearMarkers()
 
   const portsToShow = filteredPorts.value
+  console.log('添加港口标记:', portsToShow.length, '个港口')
 
   portsToShow.forEach(port => {
+    // 检查港口是否有有效的坐标
+    if (!port.longitude || !port.latitude) {
+      console.warn('港口坐标无效:', port)
+      return
+    }
+
     // 创建标记点
     const marker = new window.AMap.Marker({
       position: [port.longitude, port.latitude],
-      title: port.name,
+      title: port.nameEn,
       icon: new window.AMap.Icon({
         image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
         size: new window.AMap.Size(25, 34),
@@ -278,26 +241,26 @@ const addPortMarkers = () => {
 
     // 点击标记显示信息窗口
     marker.on('click', () => {
-      const content = `
-        <div style="padding: 10px; min-width: 200px;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">${port.name}</h4>
-          <p style="margin: 5px 0; color: #666;">
-            <strong>港口代码:</strong> ${port.code}<br>
-            <strong>所在国家:</strong> ${port.country}<br>
-            <strong>状态:</strong> <span style="color: #67c23a;">${port.status}</span><br>
-            <strong>坐标:</strong> ${port.longitude.toFixed(4)}, ${port.latitude.toFixed(4)}
-          </p>
-          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-            <strong>港口状态:</strong><br>
-            在港船舶: ${port.stats.ships} | 今日到港: ${port.stats.arrivals} | 今日离港: ${port.stats.departures}
-          </div>
-        </div>
-      `
-      infoWindow.setContent(content)
-      infoWindow.open(map, marker.getPosition())
-      
-      // 更新选中的港口
       selectedPort.value = port
+      
+      // 创建信息窗口
+      const infoWindow = new window.AMap.InfoWindow({
+        content: `
+          <div style="padding: 10px; min-width: 200px;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameEn}</h4>
+            <p style="margin: 5px 0; color: #666;">
+              <strong>港口代码:</strong> ${port.code}<br>
+              <strong>所在国家:</strong> ${port.country}<br>
+              <strong>状态:</strong> <span style="color: #67c23a;">正常运营</span><br>
+              <strong>坐标:</strong> ${port.longitude?.toFixed(4)}, ${port.latitude?.toFixed(4)}
+            </p>
+          </div>
+        `,
+        isCustom: false,
+        autoMove: true
+      })
+      
+      infoWindow.open(map, marker.getPosition())
     })
   })
 
@@ -316,82 +279,48 @@ const clearMarkers = () => {
 }
 
 // 定位到指定港口
-const focusPort = (port: any) => {
+const focusPort = (port) => {
   selectedPort.value = port
   
-  if (map) {
+  if (map && port.longitude && port.latitude) {
     // 设置地图中心和缩放级别
     map.setCenter([port.longitude, port.latitude])
     map.setZoom(12)
     
-    // 找到对应的标记并触发点击事件
-    const marker = markers.find(m => {
-      const pos = m.getPosition()
-      return Math.abs(pos.lng - port.longitude) < 0.001 && 
-             Math.abs(pos.lat - port.latitude) < 0.001
-    })
-    
-    if (marker) {
-      const content = `
+    // 显示信息窗口
+    const infoWindow = new window.AMap.InfoWindow({
+      content: `
         <div style="padding: 10px; min-width: 200px;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">${port.name}</h4>
+          <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameEn}</h4>
           <p style="margin: 5px 0; color: #666;">
             <strong>港口代码:</strong> ${port.code}<br>
             <strong>所在国家:</strong> ${port.country}<br>
-            <strong>状态:</strong> <span style="color: #67c23a;">${port.status}</span><br>
-            <strong>坐标:</strong> ${port.longitude.toFixed(4)}, ${port.latitude.toFixed(4)}
+            <strong>状态:</strong> <span style="color: #67c23a;">正常运营</span><br>
+            <strong>坐标:</strong> ${port.longitude?.toFixed(4)}, ${port.latitude?.toFixed(4)}
           </p>
-          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-            <strong>港口状态:</strong><br>
-            在港船舶: ${port.stats.ships} | 今日到港: ${port.stats.arrivals} | 今日离港: ${port.stats.departures}
-          </div>
         </div>
-      `
-      infoWindow.setContent(content)
-      infoWindow.open(map, marker.getPosition())
-    }
+      `,
+      isCustom: false,
+      autoMove: true
+    })
+    
+    infoWindow.open(map, [port.longitude, port.latitude])
   }
 }
 
-// 地图视图改变处理
-const onMapViewChange = () => {
-  nextTick(() => {
-    addPortMarkers()
-  })
-}
-
-// 动态加载高德地图API
-const loadAmapScript = () => {
-  return new Promise((resolve, reject) => {
-    if (window.AMap) {
-      resolve(window.AMap)
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://webapi.amap.com/maps?v=2.0&key=${MAP_CONFIG.AMAP.KEY}&plugin=${MAP_CONFIG.AMAP.PLUGINS.join(',')}`
-    script.onload = () => resolve(window.AMap)
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
-}
-
-// 组件挂载
+// 组件挂载后初始化
 onMounted(async () => {
-  try {
-    await loadAmapScript()
-    await nextTick()
-    initMap()
-  } catch (error) {
-    console.error('加载地图API失败:', error)
-    ElMessage.error('地图API加载失败')
-  }
+  console.log('PortMap组件挂载，开始初始化...')
+  await fetchPortData()
+  await initMap()
 })
 </script>
 
 <style scoped>
-.port-map {
+.port-map-container {
   padding: 20px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 60px);
 }
 
 .card-header {
@@ -400,55 +329,25 @@ onMounted(async () => {
   align-items: center;
 }
 
+.port-count {
+  text-align: right;
+  color: #666;
+  font-size: 14px;
+}
+
+.port-list-card {
+  height: calc(100vh - 140px);
+}
+
 .map-card {
   margin-bottom: 20px;
 }
 
-.map-container {
-  height: 500px;
-  position: relative;
-}
-
-.amap-container {
-  width: 100%;
-  height: 100%;
-  border-radius: 4px;
-}
-
-:deep(.el-card__body) {
-  padding: 15px;
-}
-
-.port-detail {
-  margin-top: 20px;
-}
-
-:deep(.el-descriptions) {
+.port-detail-card {
   margin-bottom: 20px;
 }
 
-.el-divider {
-  margin: 24px 0;
-}
-
-:deep(.el-input) {
-  width: 180px;
-}
-
-:deep(.el-statistic) {
-  text-align: center;
-}
-
-:deep(.el-statistic__title) {
-  color: #606266;
-}
-
-/* 高德地图控件样式优化 */
-:deep(.amap-logo) {
-  opacity: 0.5;
-}
-
-:deep(.amap-copyright) {
-  opacity: 0.5;
+#port-map {
+  border-radius: 4px;
 }
 </style> 

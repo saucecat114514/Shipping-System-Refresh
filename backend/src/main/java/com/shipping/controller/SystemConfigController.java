@@ -20,7 +20,7 @@ import java.util.Map;
  */
 @Tag(name = "系统配置管理", description = "系统配置管理相关接口")
 @RestController
-@RequestMapping("/api/system-config")
+@RequestMapping("/system-config")
 public class SystemConfigController {
 
     @Autowired

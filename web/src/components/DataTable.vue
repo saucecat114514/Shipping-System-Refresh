@@ -151,7 +151,8 @@ const loadTableData = async () => {
       ...searchForm
     }
     const result = await props.loadData(params)
-    tableData.value = result.list || result
+    // 兼容不同的数据结构：records (PageResult) 或 list (其他格式) 或直接数组
+    tableData.value = result.records || result.list || result || []
     total.value = result.total || 0
   } catch (error) {
     console.error('加载数据失败:', error)

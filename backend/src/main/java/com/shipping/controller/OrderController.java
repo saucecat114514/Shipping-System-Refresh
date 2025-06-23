@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Tag(name = "订单管理", description = "订单信息的增删改查操作和运价计算")
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/orders")
 public class OrderController {
 
     @Autowired
@@ -83,7 +83,7 @@ public class OrderController {
     @Operation(summary = "分页查询订单", description = "分页查询订单列表，支持按编号、客户、状态等筛选")
     @GetMapping
     public Result<PageResult<Order>> getOrderPage(OrderQueryRequest queryRequest) {
-        return orderService.getOrderPage(queryRequest);
+        return orderService.getOrderPageWithDetails(queryRequest);
     }
 
     /**

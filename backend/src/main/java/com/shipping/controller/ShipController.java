@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Tag(name = "船舶管理", description = "船舶信息的增删改查操作")
 @RestController
-@RequestMapping("/api/ships")
+@RequestMapping("/ships")
 public class ShipController {
 
     @Autowired

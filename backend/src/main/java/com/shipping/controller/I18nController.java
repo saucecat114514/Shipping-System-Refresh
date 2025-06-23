@@ -17,7 +17,7 @@ import java.util.Map;
  * 国际化演示控制器
  */
 @RestController
-@RequestMapping("/api/i18n")
+@RequestMapping("/i18n")
 @Tag(name = "国际化管理", description = "多语言支持相关接口")
 public class I18nController {
 

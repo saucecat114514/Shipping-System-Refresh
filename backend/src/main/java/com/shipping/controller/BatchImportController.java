@@ -22,7 +22,7 @@ import java.util.List;
  * 批量导入控制器
  */
 @RestController
-@RequestMapping("/api/batch-import")
+@RequestMapping("/batch-import")
 @Tag(name = "批量导入管理", description = "数据批量导入相关接口")
 @RequireRole({"ADMIN", "DISPATCHER"})
 public class BatchImportController {

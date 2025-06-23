@@ -19,7 +19,7 @@ import java.util.List;
  */
 @Tag(name = "AIS数据管理", description = "AIS数据管理相关接口")
 @RestController
-@RequestMapping("/api/ais-data")
+@RequestMapping("/ais-data")
 public class AisDataController {
 
     @Autowired

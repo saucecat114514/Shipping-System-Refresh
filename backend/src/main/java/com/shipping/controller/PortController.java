@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Tag(name = "港口管理", description = "港口信息的增删改查操作")
 @RestController
-@RequestMapping("/api/ports")
+@RequestMapping("/ports")
 public class PortController {
 
     @Autowired

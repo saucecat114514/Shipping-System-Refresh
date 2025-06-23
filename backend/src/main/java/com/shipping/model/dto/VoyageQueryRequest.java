@@ -125,4 +125,18 @@ public class VoyageQueryRequest {
     public void setSortDirection(String sortDirection) {
         this.sortDirection = sortDirection;
     }
+
+    /**
+     * 计算分页偏移量
+     * @return offset
+     */
+    public Integer getOffset() {
+        if (page == null || page < 1) {
+            page = 1;
+        }
+        if (size == null || size < 1) {
+            size = 10;
+        }
+        return (page - 1) * size;
+    }
 } 

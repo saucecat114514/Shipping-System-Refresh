@@ -20,7 +20,7 @@ import java.util.Map;
  */
 @Tag(name = "地图API", description = "地图相关的API接口")
 @RestController
-@RequestMapping("/api/map")
+@RequestMapping("/map")
 public class MapController {
 
     @Autowired

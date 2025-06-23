@@ -135,12 +135,12 @@ import { getPortList } from '@/api/port'
 
 // 表格列配置
 const columns = [
-  { prop: 'code', label: '航线编号', width: 120 },
+  { prop: 'routeNumber', label: '航线编号', width: 120 },
   { prop: 'name', label: '航线名称', width: 180 },
   { prop: 'route', label: '航线', width: 250, slot: 'route' },
-  { prop: 'distance', label: '航程(海里)', width: 120, align: 'right' },
+  { prop: 'distanceNm', label: '航程(海里)', width: 120, align: 'right' },
   { prop: 'estimatedDuration', label: '预计时间', width: 120 },
-  { prop: 'maxCapacity', label: '最大载重(吨)', width: 130, align: 'right' },
+  { prop: 'distance', label: '航程(公里)', width: 130, align: 'right' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
   { prop: 'createdAt', label: '创建时间', width: 160 }
 ]
@@ -154,7 +154,7 @@ const searchConfig = [
     placeholder: '请输入航线名称'
   },
   {
-    prop: 'code',
+    prop: 'routeNumber',
     label: '航线编号',
     type: 'input',
     placeholder: '请输入航线编号'

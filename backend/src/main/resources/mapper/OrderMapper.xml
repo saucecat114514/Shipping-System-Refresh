@@ -30,6 +30,7 @@
             <result column="customer_username" property="username"/>
             <result column="customer_email" property="email"/>
             <result column="customer_role" property="role"/>
+            <result column="customer_real_name" property="realName"/>
         </association>
         <association property="voyage" javaType="com.shipping.model.entity.Voyage">
             <id column="voyage_id" property="id"/>
@@ -130,14 +131,14 @@
             </if>
         </where>
         ORDER BY created_at DESC
-        LIMIT #{size} OFFSET #{page * size - size}
+        LIMIT #{size} OFFSET #{offset}
     </select>
 
     <!-- 分页查询订单列表（包含关联信息） -->
     <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.OrderQueryRequest" resultMap="OrderWithDetailsResultMap">
         SELECT 
             o.*,
-            u.username as customer_username, u.email as customer_email, u.role as customer_role,
+            u.username as customer_username, u.email as customer_email, u.role as customer_role, u.real_name as customer_real_name,
             v.voyage_number, v.departure_date, v.arrival_date, v.status as voyage_status
         FROM orders o
         LEFT JOIN users u ON o.customer_id = u.id
@@ -172,7 +173,7 @@
             </if>
         </where>
         ORDER BY o.created_at DESC
-        LIMIT #{size} OFFSET #{page * size - size}
+        LIMIT #{size} OFFSET #{offset}
     </select>
 
     <!-- 查询总数 -->

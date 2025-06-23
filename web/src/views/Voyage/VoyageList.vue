@@ -184,21 +184,21 @@ import { getShipList } from '@/api/ship'
 
 // 表格列配置
 const columns = [
-  { prop: 'voyageNo', label: '航次编号', width: 150 },
-  { prop: 'routeName', label: '航线名称', width: 150 },
-  { prop: 'shipName', label: '船舶名称', width: 120 },
+  { prop: 'voyageNumber', label: '航次编号', width: 150 },
+  { prop: 'route.name', label: '航线名称', width: 150 },
+  { prop: 'ship.name', label: '船舶名称', width: 120 },
   { prop: 'route', label: '航线', width: 200, slot: 'route' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'plannedDepartureTime', label: '计划出发', width: 160 },
-  { prop: 'plannedArrivalTime', label: '计划到达', width: 160 },
-  { prop: 'cargoWeight', label: '载货量(吨)', width: 120, align: 'right' },
+  { prop: 'departureDate', label: '计划出发', width: 160 },
+  { prop: 'arrivalDate', label: '计划到达', width: 160 },
+  { prop: 'ship.deadweightTonnage', label: '载重量(吨)', width: 120, align: 'right' },
   { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
 ]
 
 // 搜索配置
 const searchConfig = [
   {
-    prop: 'voyageNo',
+    prop: 'voyageNumber',
     label: '航次编号',
     type: 'input',
     placeholder: '请输入航次编号'
@@ -299,8 +299,31 @@ const getStatusType = (status) => {
 // 数据加载函数
 const loadVoyageData = async (params) => {
   try {
+    console.log('加载航次数据，参数:', params)
     const result = await getVoyageList(params)
-    return result
+    console.log('航次API原始响应:', result)
+    
+    // 确保返回正确的数据结构给DataTable
+    // API返回: {code: 200, data: {records: [...], total: 100}}
+    // request拦截器解包后: {records: [...], total: 100}
+    // DataTable期望: {records: [...], total: 100}
+    if (result && result.records) {
+      console.log('航次数据加载成功，records数量:', result.records.length)
+      return result
+    } else if (result && Array.isArray(result)) {
+      // 如果返回的是数组，包装成分页格式
+      console.log('航次数据为数组格式，转换为分页格式')
+      return {
+        records: result,
+        total: result.length
+      }
+    } else {
+      console.log('航次数据格式异常:', result)
+      return {
+        records: [],
+        total: 0
+      }
+    }
   } catch (error) {
     console.error('加载航次数据失败:', error)
     throw error
@@ -322,7 +345,7 @@ const loadBaseData = async () => {
   try {
     // 加载航线列表
     const routeResult = await getRouteList({ page: 1, size: 1000 })
-    routes.value = routeResult.data || []
+    routes.value = routeResult.records || routeResult.data || routeResult || []
     
     // 更新搜索配置中的航线选项
     const routeSearchConfig = searchConfig.find(item => item.prop === 'routeId')
@@ -335,7 +358,7 @@ const loadBaseData = async () => {
     
     // 加载船舶列表
     const shipResult = await getShipList({ page: 1, size: 1000 })
-    ships.value = shipResult.data || []
+    ships.value = shipResult.records || shipResult.data || shipResult || []
   } catch (error) {
     console.error('加载基础数据失败:', error)
   }

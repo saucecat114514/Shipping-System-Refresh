@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Tag(name = "航次管理", description = "航次信息的增删改查操作")
 @RestController
-@RequestMapping("/api/voyages")
+@RequestMapping("/voyages")
 public class VoyageController {
 
     @Autowired
@@ -82,7 +82,7 @@ public class VoyageController {
     @Operation(summary = "分页查询航次", description = "分页查询航次列表，支持按编号、航线、船舶等筛选")
     @GetMapping
     public Result<PageResult<Voyage>> getVoyagePage(VoyageQueryRequest queryRequest) {
-        return voyageService.getVoyagePage(queryRequest);
+        return voyageService.getVoyagePageWithDetails(queryRequest);
     }
 
     /**

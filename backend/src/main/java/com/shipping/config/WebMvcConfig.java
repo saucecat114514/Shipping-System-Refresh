@@ -32,24 +32,24 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 注册审计日志拦截器
         if (auditLogInterceptor != null) {
             registry.addInterceptor(auditLogInterceptor)
-                    .addPathPatterns("/api/**")
-                    .excludePathPatterns("/api/auth/**", "/api/test/**");
+                    .addPathPatterns("/**")
+                    .excludePathPatterns("/auth/**", "/test/**");
         }
 
         // 注册角色权限拦截器
         registry.addInterceptor(roleInterceptor)
-                .addPathPatterns("/api/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns(
-                    "/api/auth/login",
-                    "/api/auth/logout", 
-                    "/api/test/**",
-                    "/api/system-config/public/**"
+                    "/auth/login",
+                    "/auth/logout", 
+                    "/test/**",
+                    "/system-config/public/**"
                 );
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
+        registry.addMapping("/**")
                 .allowedOriginPatterns("*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

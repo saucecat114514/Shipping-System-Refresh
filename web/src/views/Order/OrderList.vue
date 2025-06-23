@@ -239,22 +239,22 @@ import { getPortList } from '@/api/port'
 
 // 表格列配置
 const columns = [
-  { prop: 'orderNo', label: '订单编号', width: 180 },
-  { prop: 'customerName', label: '客户名称', width: 150 },
+  { prop: 'orderNumber', label: '订单编号', width: 180 },
+  { prop: 'customer.realName', label: '客户名称', width: 150 },
   { prop: 'route', label: '运输路线', width: 200, slot: 'route' },
-  { prop: 'transportMode', label: '运输方式', width: 100, slot: 'transportMode' },
+  { prop: 'cargoType', label: '运输方式', width: 100 },
   { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, align: 'right' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'expectedDeliveryDate', label: '预计发货', width: 120 },
-  { prop: 'shippingCost', label: '运费', width: 100, align: 'right' },
-  { prop: 'createTime', label: '创建时间', width: 160 },
+  { prop: 'voyage.departureDate', label: '预计发货', width: 120 },
+  { prop: 'totalPrice', label: '运费', width: 100, align: 'right' },
+  { prop: 'createdAt', label: '创建时间', width: 160 },
   { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
 ]
 
 // 搜索配置
 const searchConfig = [
   {
-    prop: 'orderNo',
+    prop: 'orderNumber',
     label: '订单编号',
     type: 'input',
     placeholder: '请输入订单编号'
@@ -392,8 +392,31 @@ const getStatusType = (status) => {
 // 数据加载函数
 const loadOrderData = async (params) => {
   try {
+    console.log('加载订单数据，参数:', params)
     const result = await getOrderList(params)
-    return result
+    console.log('订单API原始响应:', result)
+    
+    // 确保返回正确的数据结构给DataTable
+    // API返回: {code: 200, data: {records: [...], total: 100}}
+    // request拦截器解包后: {records: [...], total: 100}
+    // DataTable期望: {records: [...], total: 100}
+    if (result && result.records) {
+      console.log('订单数据加载成功，records数量:', result.records.length)
+      return result
+    } else if (result && Array.isArray(result)) {
+      // 如果返回的是数组，包装成分页格式
+      console.log('订单数据为数组格式，转换为分页格式')
+      return {
+        records: result,
+        total: result.length
+      }
+    } else {
+      console.log('订单数据格式异常:', result)
+      return {
+        records: [],
+        total: 0
+      }
+    }
   } catch (error) {
     console.error('加载订单数据失败:', error)
     throw error
@@ -414,7 +437,7 @@ const deleteOrderData = async (id) => {
 const loadPorts = async () => {
   try {
     const result = await getPortList({ page: 1, size: 1000 })
-    ports.value = result.data || []
+    ports.value = result.records || result.data || result || []
   } catch (error) {
     console.error('加载港口列表失败:', error)
   }

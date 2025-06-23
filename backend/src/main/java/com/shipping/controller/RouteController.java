@@ -20,7 +20,7 @@ import java.util.List;
  */
 @Tag(name = "航线管理", description = "航线信息的增删改查操作")
 @RestController
-@RequestMapping("/api/routes")
+@RequestMapping("/routes")
 public class RouteController {
 
     @Autowired
