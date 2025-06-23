@@ -7,6 +7,8 @@ import com.shipping.model.dto.UserQueryRequest;
 import com.shipping.model.dto.ChangePasswordRequest;
 import com.shipping.common.Result;
 import com.shipping.common.PageResult;
+import com.shipping.common.RolePermission;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,10 +19,12 @@ import java.util.List;
 
 /**
  * 用户管理控制器
+ * 只有系统管理员可以管理用户
  */
 @Tag(name = "用户管理", description = "用户管理相关接口")
 @RestController
 @RequestMapping("/users")
+@RequireRole({"ADMIN"})
 public class UserController {
 
     @Autowired

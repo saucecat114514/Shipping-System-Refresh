@@ -43,7 +43,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                     "/auth/login",
                     "/auth/logout", 
                     "/test/**",
-                    "/system-config/public/**"
+                    "/system-config/public/**",
+                    "/ships/all",
+                    "/ports/all"
                 );
     }
 

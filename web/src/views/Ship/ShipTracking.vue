@@ -101,11 +101,10 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import { MAP_CONFIG } from '@/utils/constants'
 import { getAllShips } from '@/api/ship'
 
 // 响应式数据
@@ -149,8 +148,7 @@ const fetchShipData = async () => {
     loading.value = true
     console.log('开始获取船舶数据...')
     
-    const response = await fetch('/api/ships/all')
-    const result = await response.json()
+    const result = await getAllShips()
     console.log('船舶API响应:', result)
     
     if (result.code === 200) {
@@ -188,14 +186,14 @@ const fetchShipData = async () => {
     }
   } catch (error) {
     console.error('获取船舶数据失败:', error)
-    ElMessage.error('获取船舶数据失败，请检查网络连接')
+    ElMessage.error('获取船舶数据失败: 用户未登录或token无效')
   } finally {
     loading.value = false
   }
 }
 
 // 格式化日期
-const formatDate = (dateString: string) => {
+const formatDate = (dateString) => {
   if (!dateString) return '未知'
   return new Date(dateString).toLocaleString()
 }
@@ -251,7 +249,7 @@ const initMap = async () => {
 }
 
 // 获取船舶状态对应的图标
-const getShipIcon = (status: number) => {
+const getShipIcon = (status) => {
   const iconMap = {
     0: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',  // 停泊
     1: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_g.png',  // 航行中
@@ -335,7 +333,7 @@ const addShipMarkers = () => {
 }
 
 // 获取状态颜色
-const getStatusColor = (status: number) => {
+const getStatusColor = (status) => {
   const colorMap = {
     0: '#409eff',  // 停泊 - 蓝色
     1: '#67c23a',  // 航行中 - 绿色
@@ -354,7 +352,7 @@ const clearMarkers = () => {
 }
 
 // 定位到指定船舶
-const focusShip = (ship: any) => {
+const focusShip = (ship) => {
   selectedShip.value = ship
   
   if (map && ship.longitude && ship.latitude) {
@@ -390,8 +388,8 @@ const focusShip = (ship: any) => {
 }
 
 // 获取状态类型
-const getStatusType = (status: number) => {
-  const statusMap: Record<number, string> = {
+const getStatusType = (status) => {
+  const statusMap = {
     0: 'info',     // 停泊
     1: 'success',  // 航行中
     2: 'warning',  // 锚泊
@@ -401,7 +399,7 @@ const getStatusType = (status: number) => {
 }
 
 // 状态转换函数
-const getStatusText = (status: number) => {
+const getStatusText = (status) => {
   const statusMap = {
     0: '停泊',
     1: '航行中',

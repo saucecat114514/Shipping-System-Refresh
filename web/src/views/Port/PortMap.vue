@@ -92,6 +92,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { getAllPorts } from '@/api/port'
 
 // 响应式数据
 const searchKeyword = ref('')
@@ -133,8 +134,7 @@ const fetchPortData = async () => {
     loading.value = true
     console.log('开始获取港口数据...')
     
-    const response = await fetch('/api/ports/all')
-    const result = await response.json()
+    const result = await getAllPorts()
     console.log('API响应:', result)
     
     if (result.code === 200) {
@@ -153,7 +153,7 @@ const fetchPortData = async () => {
     }
   } catch (error) {
     console.error('获取港口数据失败:', error)
-    ElMessage.error('获取港口数据失败，请检查网络连接')
+    ElMessage.error('获取港口数据失败: 用户未登录或token无效')
   } finally {
     loading.value = false
   }

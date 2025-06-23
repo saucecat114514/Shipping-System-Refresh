@@ -31,7 +31,15 @@
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="handleReset">重置</el-button>
-          <el-button type="success" @click="handleAdd" v-if="showAdd">新增</el-button>
+          <PermissionButton 
+            v-if="showAdd"
+            type="success" 
+            :roles="addButtonRoles"
+            permission="create"
+            @click="handleAdd"
+          >
+            新增
+          </PermissionButton>
         </el-form-item>
       </el-form>
     </div>
@@ -59,8 +67,24 @@
       
       <el-table-column label="操作" width="200" fixed="right" v-if="showActions">
         <template #default="scope">
-          <el-button type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-          <el-button type="danger" size="small" @click="handleDelete(scope.row)">删除</el-button>
+          <PermissionButton 
+            type="primary" 
+            size="small" 
+            :roles="editButtonRoles"
+            permission="edit"
+            @click="handleEdit(scope.row)"
+          >
+            编辑
+          </PermissionButton>
+          <PermissionButton 
+            type="danger" 
+            size="small" 
+            :roles="deleteButtonRoles"
+            permission="delete"
+            @click="handleDelete(scope.row)"
+          >
+            删除
+          </PermissionButton>
         </template>
       </el-table-column>
     </el-table>
@@ -83,6 +107,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import PermissionButton from './PermissionButton.vue'
+import { USER_ROLES } from '../utils/constants'
 
 const props = defineProps({
   // 表格列配置
@@ -119,6 +145,21 @@ const props = defineProps({
   showPagination: {
     type: Boolean,
     default: true
+  },
+  // 新增按钮权限角色
+  addButtonRoles: {
+    type: Array,
+    default: () => [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
+  },
+  // 编辑按钮权限角色
+  editButtonRoles: {
+    type: Array,
+    default: () => [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
+  },
+  // 删除按钮权限角色
+  deleteButtonRoles: {
+    type: Array,
+    default: () => [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
   }
 })
 

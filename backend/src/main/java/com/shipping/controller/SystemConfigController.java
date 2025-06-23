@@ -6,6 +6,7 @@ import com.shipping.model.dto.SystemConfigRequest;
 import com.shipping.model.dto.SystemConfigQueryRequest;
 import com.shipping.common.Result;
 import com.shipping.common.PageResult;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,10 +18,12 @@ import java.util.Map;
 
 /**
  * 系统配置管理控制器
+ * 只有系统管理员可以访问
  */
 @Tag(name = "系统配置管理", description = "系统配置管理相关接口")
 @RestController
 @RequestMapping("/system-config")
+@RequireRole({"ADMIN"})
 public class SystemConfigController {
 
     @Autowired

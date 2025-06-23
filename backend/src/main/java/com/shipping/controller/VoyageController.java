@@ -2,6 +2,7 @@ package com.shipping.controller;
 
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Voyage;
 import com.shipping.model.dto.VoyageRequest;
 import com.shipping.model.dto.VoyageQueryRequest;
@@ -17,6 +18,7 @@ import java.util.List;
 
 /**
  * 航次管理控制器
+ * 管理员和调度员可以管理航次，客户只能查看
  */
 @Tag(name = "航次管理", description = "航次信息的增删改查操作")
 @RestController

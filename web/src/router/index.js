@@ -27,6 +27,7 @@ import SystemConfig from '@/views/Config/SystemConfig.vue'
 import TestConnection from '@/views/TestConnection.vue'
 import QuickTest from '@/views/QuickTest.vue'
 import DebugPortList from '@/views/DebugPortList.vue'
+import RoleTest from '@/views/RoleTest.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -192,6 +193,17 @@ const router = createRouter({
           path: '',
           name: 'testPort',
           component: TestPortAPI
+        }
+      ]
+    },
+    {
+      path: '/role-test',
+      component: MainLayout,
+      children: [
+        {
+          path: '',
+          name: 'roleTest',
+          component: RoleTest
         }
       ]
     },

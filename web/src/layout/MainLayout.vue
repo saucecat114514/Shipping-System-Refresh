@@ -14,48 +14,37 @@
         active-text-color="#409EFF"
         router
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><Odometer /></el-icon>
-          <span>数据面板</span>
-        </el-menu-item>
-        
-        <el-sub-menu index="ports">
-          <template #title>
-            <el-icon><MapLocation /></el-icon>
-            <span>港口管理</span>
-          </template>
-          <el-menu-item index="/ports">港口列表</el-menu-item>
-          <el-menu-item index="/ports/map">港口地图</el-menu-item>
-        </el-sub-menu>
-        
-        <el-sub-menu index="ships">
-          <template #title>
-            <el-icon><Ship /></el-icon>
-            <span>船舶管理</span>
-          </template>
-          <el-menu-item index="/ships">船舶列表</el-menu-item>
-          <el-menu-item index="/ships/tracking">船舶追踪</el-menu-item>
-        </el-sub-menu>
-        
-        <el-menu-item index="/routes">
-          <el-icon><Guide /></el-icon>
-          <span>航线管理</span>
-        </el-menu-item>
-        
-        <el-menu-item index="/voyages">
-          <el-icon><Calendar /></el-icon>
-          <span>航次管理</span>
-        </el-menu-item>
-        
-        <el-menu-item index="/orders">
-          <el-icon><List /></el-icon>
-          <span>订单管理</span>
-        </el-menu-item>
-        
-        <el-menu-item index="/test-port">
-          <el-icon><Tools /></el-icon>
-          <span>API测试</span>
-        </el-menu-item>
+        <!-- 动态菜单渲染 -->
+        <template v-for="item in filteredMenuItems">
+          <!-- 有子菜单的项 -->
+          <el-sub-menu 
+            v-if="item.children && item.children.length > 0" 
+            :key="item.title" 
+            :index="item.title"
+          >
+            <template #title>
+              <el-icon><component :is="item.icon" /></el-icon>
+              <span>{{ item.title }}</span>
+            </template>
+            <el-menu-item 
+              v-for="child in item.children" 
+              :key="child.path" 
+              :index="child.path"
+            >
+              {{ child.title }}
+            </el-menu-item>
+          </el-sub-menu>
+          
+          <!-- 单个菜单项 -->
+          <el-menu-item 
+            v-else 
+            :key="item.path" 
+            :index="item.path"
+          >
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ item.title }}</span>
+          </el-menu-item>
+        </template>
       </el-menu>
     </el-aside>
 
@@ -71,6 +60,15 @@
         </div>
         
         <div class="header-right">
+          <!-- 用户角色显示 -->
+          <el-tag 
+            :type="roleTagType" 
+            size="small" 
+            class="role-tag"
+          >
+            {{ roleDisplayName }}
+          </el-tag>
+          
           <el-dropdown>
             <span class="user-info">
               <el-icon><User /></el-icon>
@@ -79,7 +77,11 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="logout">
+                <el-dropdown-item disabled>
+                  <el-icon><InfoFilled /></el-icon>
+                  {{ userInfo.email || '未设置邮箱' }}
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="logout">
                   <el-icon><SwitchButton /></el-icon>
                   退出登录
                 </el-dropdown-item>
@@ -101,18 +103,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import {
-  Odometer,
-  MapLocation,
-  Ship,
-  Guide,
-  Calendar,
-  List,
-  Tools,
-  User,
-  ArrowDown,
-  SwitchButton
-} from '@element-plus/icons-vue'
+import { User, ArrowDown, SwitchButton, InfoFilled } from '@element-plus/icons-vue'
+
+import { menuItems } from '../config/menu'
+import { PermissionManager } from '../utils/permission'
+import { USER_ROLES, USER_ROLE_LABELS } from '../utils/constants'
 
 const route = useRoute()
 const router = useRouter()
@@ -121,11 +116,39 @@ const router = useRouter()
 const userInfo = ref({
   username: '',
   realName: '',
-  role: ''
+  role: '',
+  email: ''
 })
 
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
+
+// 根据用户角色过滤菜单
+const filteredMenuItems = computed(() => {
+  if (!userInfo.value.role) {
+    return []
+  }
+  return PermissionManager.filterMenuByRole(menuItems, userInfo.value.role)
+})
+
+// 角色显示名称
+const roleDisplayName = computed(() => {
+  return USER_ROLE_LABELS[userInfo.value.role] || userInfo.value.role
+})
+
+// 角色标签类型
+const roleTagType = computed(() => {
+  switch (userInfo.value.role) {
+    case USER_ROLES.ADMIN:
+      return 'danger'
+    case USER_ROLES.DISPATCHER:
+      return 'warning'
+    case USER_ROLES.CUSTOMER:
+      return 'info'
+    default:
+      return ''
+  }
+})
 
 // 面包屑标题
 const breadcrumbTitle = computed(() => {
@@ -134,11 +157,18 @@ const breadcrumbTitle = computed(() => {
     '/ports': '港口列表',
     '/ports/map': '港口地图',
     '/ships': '船舶列表',
+    '/ships/management': '船舶管理',
     '/ships/tracking': '船舶追踪',
-    '/routes': '航线管理',
-    '/voyages': '航次管理',
-    '/orders': '订单管理',
-    '/test-port': 'API测试'
+    '/routes': '航线列表',
+    '/routes/planning': '航线规划',
+    '/voyages': '航次列表',
+    '/voyages/schedule': '航次调度',
+    '/orders': '订单列表',
+    '/orders/create': '创建订单',
+    '/users': '用户管理',
+    '/config': '系统配置',
+    '/system-test': '系统测试',
+    '/test-connection': '连接测试'
   }
   return titleMap[route.path] || ''
 })
@@ -148,27 +178,72 @@ const getUserInfo = () => {
   const token = localStorage.getItem('token')
   if (token) {
     try {
-      // 这里可以调用API获取用户信息，目前使用localStorage存储的信息
-      const savedUserInfo = localStorage.getItem('userInfo')
+      // 从localStorage获取用户信息
+      const savedUserInfo = localStorage.getItem('user')
       if (savedUserInfo) {
-        userInfo.value = JSON.parse(savedUserInfo)
+        const userData = JSON.parse(savedUserInfo)
+        userInfo.value = {
+          username: userData.username || '',
+          realName: userData.realName || '',
+          role: userData.role || '',
+          email: userData.email || ''
+        }
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)
+      // 如果获取用户信息失败，跳转到登录页
+      logout()
     }
+  } else {
+    // 没有token，跳转到登录页
+    router.push('/login')
   }
 }
 
 // 退出登录
 const logout = () => {
   localStorage.removeItem('token')
-  localStorage.removeItem('userInfo')
+  localStorage.removeItem('user')
   ElMessage.success('退出登录成功')
   router.push('/login')
 }
 
+// 权限检查
+const checkPermission = () => {
+  const currentPath = route.path
+  const userRole = userInfo.value.role
+  
+  // 检查当前页面是否在用户有权限的菜单中
+  const hasAccess = checkPathAccess(filteredMenuItems.value, currentPath)
+  
+  if (!hasAccess && currentPath !== '/login') {
+    ElMessage.error('您没有权限访问该页面')
+    router.push('/dashboard')
+  }
+}
+
+// 递归检查路径访问权限
+const checkPathAccess = (menuItems, targetPath) => {
+  for (const item of menuItems) {
+    if (item.path === targetPath) {
+      return true
+    }
+    if (item.children && checkPathAccess(item.children, targetPath)) {
+      return true
+    }
+  }
+  return false
+}
+
 onMounted(() => {
   getUserInfo()
+  checkPermission()
+})
+
+// 监听路由变化，检查权限
+import { watch } from 'vue'
+watch(() => route.path, () => {
+  checkPermission()
 })
 </script>
 
@@ -226,6 +301,11 @@ onMounted(() => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.role-tag {
+  margin-right: 8px;
 }
 
 .user-info {
@@ -259,6 +339,10 @@ onMounted(() => {
   
   .sidebar-menu .el-sub-menu__title span,
   .sidebar-menu .el-menu-item span {
+    display: none;
+  }
+  
+  .role-tag {
     display: none;
   }
 }

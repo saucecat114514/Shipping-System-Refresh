@@ -51,7 +51,7 @@ const handleLogin = () => {
         
         const token = response.token;
         localStorage.setItem('token', token);
-        localStorage.setItem('userInfo', JSON.stringify(response));
+        localStorage.setItem('user', JSON.stringify(response));
         ElMessage.success('登录成功');
         router.push('/dashboard');
       } catch (error) {

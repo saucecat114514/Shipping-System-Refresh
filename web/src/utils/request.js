@@ -24,13 +24,8 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
-    const { code, msg, data } = response.data
-    if (code === 200) {
-      return data
-    } else {
-      ElMessage.error(msg || '请求失败')
-      return Promise.reject(new Error(msg || '请求失败'))
-    }
+    // 直接返回完整的响应数据，让前端组件自己处理
+    return response.data
   },
   error => {
     if (error.response) {

@@ -2,6 +2,7 @@ package com.shipping.controller;
 
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Route;
 import com.shipping.model.dto.RouteRequest;
 import com.shipping.model.dto.RouteQueryRequest;
@@ -17,6 +18,7 @@ import java.util.List;
 
 /**
  * 航线管理控制器
+ * 管理员和调度员可以管理航线，客户只能查看
  */
 @Tag(name = "航线管理", description = "航线信息的增删改查操作")
 @RestController

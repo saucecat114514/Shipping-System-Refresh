@@ -2,6 +2,7 @@ package com.shipping.controller;
 
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Ship;
 import com.shipping.model.dto.ShipRequest;
 import com.shipping.model.dto.ShipQueryRequest;
@@ -17,6 +18,7 @@ import java.util.List;
 
 /**
  * 船舶管理控制器
+ * 管理员和调度员可以管理船舶，客户只能查看
  */
 @Tag(name = "船舶管理", description = "船舶信息的增删改查操作")
 @RestController

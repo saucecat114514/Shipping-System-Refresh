@@ -2,6 +2,7 @@ package com.shipping.controller;
 
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Port;
 import com.shipping.model.dto.PortRequest;
 import com.shipping.model.dto.PortQueryRequest;
@@ -31,6 +32,7 @@ public class PortController {
      */
     @Operation(summary = "创建港口", description = "添加新的港口信息")
     @PostMapping
+    @RequireRole({"ADMIN", "DISPATCHER"})
     public Result<Port> createPort(@Valid @RequestBody PortRequest portRequest) {
         return portService.createPort(portRequest);
     }
@@ -40,6 +42,7 @@ public class PortController {
      */
     @Operation(summary = "删除港口", description = "根据ID删除港口")
     @DeleteMapping("/{id}")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     public Result<Void> deletePort(
             @Parameter(description = "港口ID") @PathVariable Long id) {
         return portService.deletePort(id);
@@ -50,6 +53,7 @@ public class PortController {
      */
     @Operation(summary = "更新港口", description = "更新港口信息")
     @PutMapping("/{id}")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     public Result<Port> updatePort(
             @Parameter(description = "港口ID") @PathVariable Long id,
             @Valid @RequestBody PortRequest portRequest) {
@@ -61,6 +65,7 @@ public class PortController {
      */
     @Operation(summary = "查询港口详情", description = "根据ID查询港口详细信息")
     @GetMapping("/{id}")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     public Result<Port> getPortById(
             @Parameter(description = "港口ID") @PathVariable Long id) {
         return portService.getPortById(id);
@@ -71,6 +76,7 @@ public class PortController {
      */
     @Operation(summary = "根据代码查询港口", description = "根据港口代码查询港口信息")
     @GetMapping("/code/{code}")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     public Result<Port> getPortByCode(
             @Parameter(description = "港口代码") @PathVariable String code) {
         return portService.getPortByCode(code);
@@ -81,6 +87,7 @@ public class PortController {
      */
     @Operation(summary = "分页查询港口", description = "分页查询港口列表，支持按名称、代码、国家筛选")
     @GetMapping
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     public Result<PageResult<Port>> getPortPage(PortQueryRequest queryRequest) {
         return portService.getPortPage(queryRequest);
     }

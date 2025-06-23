@@ -63,7 +63,7 @@ public class RoleInterceptor implements HandlerInterceptor {
         
         RequireRole requireRole = methodAnnotation != null ? methodAnnotation : classAnnotation;
         
-        // 如果没有权限注解，直接放行
+        // 如果没有权限注解，直接放行（不需要任何权限检查）
         if (requireRole == null) {
             return true;
         }

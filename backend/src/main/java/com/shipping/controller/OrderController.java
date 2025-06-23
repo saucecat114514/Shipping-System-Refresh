@@ -2,10 +2,12 @@ package com.shipping.controller;
 
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
+import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Order;
 import com.shipping.model.dto.OrderRequest;
 import com.shipping.model.dto.OrderQueryRequest;
 import com.shipping.service.OrderService;
+import com.shipping.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * 订单管理控制器
@@ -26,12 +29,16 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    
+    @Autowired
+    private UserService userService;
 
     /**
      * 创建订单
      */
     @Operation(summary = "创建订单", description = "添加新的订单信息")
     @PostMapping
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     public Result<Order> createOrder(@Valid @RequestBody OrderRequest orderRequest) {
         return orderService.createOrder(orderRequest);
     }
@@ -41,6 +48,7 @@ public class OrderController {
      */
     @Operation(summary = "删除订单", description = "根据ID删除订单")
     @DeleteMapping("/{id}")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     public Result<Void> deleteOrder(
             @Parameter(description = "订单ID") @PathVariable Long id) {
         return orderService.deleteOrder(id);
@@ -82,7 +90,28 @@ public class OrderController {
      */
     @Operation(summary = "分页查询订单", description = "分页查询订单列表，支持按编号、客户、状态等筛选")
     @GetMapping
-    public Result<PageResult<Order>> getOrderPage(OrderQueryRequest queryRequest) {
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
+    public Result<PageResult<Order>> getOrderPage(
+            OrderQueryRequest queryRequest,
+            HttpServletRequest request) {
+        
+        // 如果是客户角色，只能查看自己的订单
+        String userRole = (String) request.getAttribute("currentUserRole");
+        String username = (String) request.getAttribute("currentUser");
+        
+        if ("CUSTOMER".equals(userRole)) {
+            // 客户只能查看自己的订单，根据username查找用户ID
+            try {
+                var user = userService.getUserByUsername(username);
+                if (user != null) {
+                    queryRequest.setCustomerId(user.getId());
+                }
+            } catch (Exception e) {
+                // 如果找不到用户，设置一个不存在的ID，确保不返回任何订单
+                queryRequest.setCustomerId(-1L);
+            }
+        }
+        
         return orderService.getOrderPageWithDetails(queryRequest);
     }
 
