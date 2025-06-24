@@ -281,7 +281,8 @@ const router = createRouter({
           component: OrderCreate
         }
       ]
-  ],
+    }
+  ]
 })
 
 // 路由守卫 (临时简化版本，用于调试)
