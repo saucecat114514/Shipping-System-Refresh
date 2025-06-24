@@ -89,7 +89,7 @@
             <el-button type="text" @click="goToMyOrders">查看全部</el-button>
           </div>
         </template>
-        <el-table :data="recentOrders" stripe style="width: 100%">
+        <el-table :data="recentOrders" stripe style="width: 100%" empty-text="暂无订单">
           <el-table-column prop="orderNumber" label="订单号" width="150" />
           <el-table-column prop="route" label="航线" width="200" />
           <el-table-column prop="cargoType" label="货物类型" width="120" />
@@ -168,6 +168,7 @@ import {
   Plus, Document, View, Ship, Search, Location, 
   Position, User, InfoFilled, Refresh
 } from '@element-plus/icons-vue'
+import { getCustomerOrders, getCustomerOrderStats } from '@/api/order'
 
 const router = useRouter()
 
@@ -193,9 +194,12 @@ const recentOrders = ref([])
 const getUserInfo = () => {
   try {
     const token = localStorage.getItem('token')
-    if (token) {
-      // 从token中解析用户信息，或从后端获取
-      userInfo.username = localStorage.getItem('username') || '客户用户'
+    const userStr = localStorage.getItem('user')
+    if (token && userStr) {
+      const user = JSON.parse(userStr)
+      userInfo.username = user.username || '客户用户'
+      userInfo.email = user.email || ''
+      userInfo.role = user.role || 'CUSTOMER'
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)
@@ -205,50 +209,82 @@ const getUserInfo = () => {
 // 获取统计数据
 const getStats = async () => {
   try {
-    // 这里可以调用后端API获取统计数据
-    // const response = await getCustomerStats()
-    // stats.totalOrders = response.data.totalOrders
+    const userStr = localStorage.getItem('user')
+    if (!userStr) {
+      console.error('未找到用户信息')
+      return
+    }
     
-    // 模拟数据
-    stats.totalOrders = 28
-    stats.pendingOrders = 3
-    stats.shippingOrders = 8
-    stats.completedOrders = 17
+    const user = JSON.parse(userStr)
+    const userId = user.userId || user.id
+    if (!userId) {
+      console.error('未找到用户ID')
+      return
+    }
+    
+    // 使用新的统计接口
+    const statsRes = await getCustomerOrderStats(userId)
+    if (statsRes.code === 200 && statsRes.data) {
+      const data = statsRes.data
+      stats.totalOrders = data.totalOrders || 0
+      stats.pendingOrders = data.pendingOrders || 0
+      stats.shippingOrders = data.shippingOrders || 0
+      stats.completedOrders = data.completedOrders || 0
+    }
   } catch (error) {
     console.error('获取统计数据失败:', error)
+    // 设置默认值
+    stats.totalOrders = 0
+    stats.pendingOrders = 0
+    stats.shippingOrders = 0
+    stats.completedOrders = 0
   }
 }
 
 // 获取最近订单
 const getRecentOrders = async () => {
   try {
-    // 这里可以调用后端API获取最近订单
-    // const response = await getRecentOrders()
-    // recentOrders.value = response.data
+    const userStr = localStorage.getItem('user')
+    if (!userStr) {
+      console.error('未找到用户信息')
+      recentOrders.value = []
+      return
+    }
     
-    // 模拟数据
-    recentOrders.value = [
-      {
-        id: 1,
-        orderNumber: 'ORD202406240001',
-        route: '上海港 → 洛杉矶港',
-        cargoType: '集装箱',
-        weight: 25.5,
-        status: 'PENDING',
-        createdAt: '2024-06-24 10:30'
-      },
-      {
-        id: 2,
-        orderNumber: 'ORD202406230002',
-        route: '青岛港 → 汉堡港',
-        cargoType: '散货',
-        weight: 18.0,
-        status: 'SHIPPING',
-        createdAt: '2024-06-23 14:20'
-      }
-    ]
+    const user = JSON.parse(userStr)
+    const userId = user.userId || user.id
+    if (!userId) {
+      console.error('未找到用户ID')
+      recentOrders.value = []
+      return
+    }
+    
+    // 获取用户的所有订单
+    const response = await getCustomerOrders(userId)
+    if (response.code === 200 && response.data) {
+      const orders = response.data
+      
+      // 按创建时间排序，取最近的两条
+      const sortedOrders = orders.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      ).slice(0, 2)
+      
+      // 格式化订单数据
+      recentOrders.value = sortedOrders.map(order => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        route: `${order.originPortName || '未知'} → ${order.destinationPortName || '未知'}`,
+        cargoType: order.cargoType,
+        weight: order.cargoWeight,
+        status: order.status,
+        createdAt: order.createdAt ? order.createdAt.substring(0, 16) : ''
+      }))
+    } else {
+      recentOrders.value = []
+    }
   } catch (error) {
     console.error('获取最近订单失败:', error)
+    recentOrders.value = []
   }
 }
 
@@ -267,9 +303,11 @@ const getStatusType = (status) => {
 // 状态文本
 const getStatusText = (status) => {
   const textMap = {
-    'PENDING': '待处理',
+    'PENDING_ASSIGNMENT': '待分配航次',
+    'PENDING': '待确认',
     'CONFIRMED': '已确认',
-    'SHIPPING': '运输中',
+    'IN_TRANSIT': '运输中',
+    'DELIVERED': '已送达',
     'COMPLETED': '已完成',
     'CANCELLED': '已取消'
   }
@@ -278,7 +316,7 @@ const getStatusText = (status) => {
 
 // 导航方法
 const goToMyOrders = () => {
-  router.push('/customer/my-orders')
+  router.push('/customer/orders')
 }
 
 const goToPortList = () => {
@@ -298,7 +336,11 @@ const goToVoyageList = () => {
 }
 
 const goToOrderCreate = () => {
-  router.push('/order/create')
+  router.push('/customer/orders/create')
+}
+
+const goToCreateOrder = () => {
+  router.push('/customer/orders/create')
 }
 
 const viewOrder = (orderId) => {

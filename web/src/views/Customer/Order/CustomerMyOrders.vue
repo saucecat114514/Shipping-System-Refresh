@@ -17,11 +17,6 @@
       <!-- 搜索区域 -->
       <div class="search-area">
         <el-form :model="searchForm" :inline="true">
-          <el-form-item>
-            <el-button type="warning" @click="testWithHardcodedId">
-              测试API (使用硬编码ID)
-            </el-button>
-          </el-form-item>
           <el-form-item label="订单号">
             <el-input
               v-model="searchForm.orderNumber"
@@ -244,7 +239,6 @@ import {
   Search, Refresh, View, Edit, Close, Plus, Position 
 } from '@element-plus/icons-vue'
 import { getCustomerOrders, cancelOrder as cancelOrderApi } from '@/api/order'
-import request from '@/utils/request'
 
 const router = useRouter()
 
@@ -311,14 +305,33 @@ const allOrders = ref([])
 const loadOrderData = async () => {
   try {
     loading.value = true
-    const params = {}
     
-    // 只传递状态筛选参数（后端API支持状态筛选）
-    if (searchForm.status) {
-      params.status = searchForm.status
+    // 获取当前用户ID
+    const userStr = localStorage.getItem('user')
+    if (!userStr) {
+      ElMessage.error('未找到用户信息，请重新登录')
+      return
     }
     
-    const result = await getCustomerOrders(params)
+    let userId
+    try {
+      const user = JSON.parse(userStr)
+      userId = user.userId || user.id
+      if (!userId) {
+        ElMessage.error('用户ID缺失，请重新登录')
+        return
+      }
+    } catch (error) {
+      console.error('解析用户信息失败:', error)
+      ElMessage.error('用户信息格式错误，请重新登录')
+      return
+    }
+    
+    // 准备状态参数
+    const status = searchForm.status || null
+    
+    // 调用API获取订单数据
+    const result = await getCustomerOrders(userId, status)
     
     if (result.code === 200) {
       allOrders.value = result.data || []
@@ -460,52 +473,10 @@ const createNewOrder = () => {
   router.push('/customer/orders/create')
 }
 
-// 测试硬编码用户ID
-const testWithHardcodedId = async () => {
-  try {
-    console.log('测试API调用...')
-    // 直接调用API，不通过getCustomerOrders函数
-    const response = await request({
-      url: '/orders/customer/1',  // 使用ID 1测试
-      method: 'get',
-      params: {
-        page: 1,
-        size: 20
-      }
-    })
-    
-    console.log('测试API响应:', response)
-    if (response.code === 200) {
-      ElMessage.success('API调用成功！数据数量: ' + (response.data?.length || 0))
-    } else {
-      ElMessage.error('API调用失败: ' + response.msg)
-    }
-  } catch (error) {
-    console.error('测试API调用失败:', error)
-    ElMessage.error('测试API调用失败: ' + error.message)
-  }
-}
+
 
 // 初始化
 onMounted(() => {
-  // 调试：打印localStorage中的用户信息
-  console.log('=== 调试信息 ===')
-  console.log('Token:', localStorage.getItem('token'))
-  console.log('User字符串:', localStorage.getItem('user'))
-  
-  try {
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      const user = JSON.parse(userStr)
-      console.log('解析后的用户对象:', user)
-      console.log('用户ID (userId):', user.userId)
-      console.log('用户ID (id):', user.id)
-    }
-  } catch (error) {
-    console.error('解析用户信息失败:', error)
-  }
-  console.log('===============')
-  
   loadOrderData()
 })
 </script>

@@ -9,6 +9,8 @@
         <result column="order_number" property="orderNumber"/>
         <result column="customer_id" property="customerId"/>
         <result column="voyage_id" property="voyageId"/>
+        <result column="origin_port_id" property="originPortId"/>
+        <result column="destination_port_id" property="destinationPortId"/>
         <result column="cargo_name" property="cargoName"/>
         <result column="cargo_type" property="cargoType"/>
         <result column="cargo_weight" property="cargoWeight"/>
@@ -53,13 +55,13 @@
     <!-- 插入订单 -->
     <insert id="insert" parameterType="com.shipping.model.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO orders (
-            order_number, customer_id, voyage_id, cargo_name, cargo_type,
-            cargo_weight, cargo_volume, is_urgent, base_price, additional_fees,
-            total_price, status, notes, created_at, updated_at
+            order_number, customer_id, voyage_id, origin_port_id, destination_port_id,
+            cargo_name, cargo_type, cargo_weight, cargo_volume, is_urgent, 
+            base_price, additional_fees, total_price, status, notes, created_at, updated_at
         ) VALUES (
-            #{orderNumber}, #{customerId}, #{voyageId}, #{cargoName}, #{cargoType},
-            #{cargoWeight}, #{cargoVolume}, #{isUrgent}, #{basePrice}, #{additionalFees},
-            #{totalPrice}, #{status}, #{notes}, #{createdAt}, #{updatedAt}
+            #{orderNumber}, #{customerId}, #{voyageId}, #{originPortId}, #{destinationPortId},
+            #{cargoName}, #{cargoType}, #{cargoWeight}, #{cargoVolume}, #{isUrgent}, 
+            #{basePrice}, #{additionalFees}, #{totalPrice}, #{status}, #{notes}, #{createdAt}, #{updatedAt}
         )
     </insert>
 
@@ -74,6 +76,8 @@
             order_number = #{orderNumber},
             customer_id = #{customerId},
             voyage_id = #{voyageId},
+            origin_port_id = #{originPortId},
+            destination_port_id = #{destinationPortId},
             cargo_name = #{cargoName},
             cargo_type = #{cargoType},
             cargo_weight = #{cargoWeight},
@@ -271,7 +275,8 @@
             u.username as customer_username, u.email as customer_email, u.role as customer_role, u.real_name as customer_real_name,
             v.voyage_number, v.departure_date, v.arrival_date, v.status as voyage_status,
             s.name as ship_name, s.imo_number,
-            r.name as route_name, r.origin_port_id, r.destination_port_id,
+            r.name as route_name,
+            -- 直接从订单表中获取港口信息，而不是从路线表
             op.name_cn as origin_port_name, op.code as origin_port_code,
             dp.name_cn as destination_port_name, dp.code as destination_port_code
         FROM orders o
@@ -279,8 +284,9 @@
         LEFT JOIN voyages v ON o.voyage_id = v.id
         LEFT JOIN ships s ON v.ship_id = s.id
         LEFT JOIN routes r ON v.route_id = r.id
-        LEFT JOIN ports op ON r.origin_port_id = op.id
-        LEFT JOIN ports dp ON r.destination_port_id = dp.id
+        -- 直接根据订单的港口ID关联港口表
+        LEFT JOIN ports op ON o.origin_port_id = op.id
+        LEFT JOIN ports dp ON o.destination_port_id = dp.id
         WHERE o.customer_id = #{customerId}
         <if test="status != null and status != ''">
             AND o.status = #{status}

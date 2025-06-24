@@ -179,10 +179,11 @@ const breadcrumbTitle = computed(() => {
     '/voyages/schedule': '航次调度',
     '/orders': '订单列表',
     '/orders/create': '创建订单',
+    '/orders/assignment': '订单分配',
     '/users': '用户管理',
     '/config': '系统配置',
-    '/system-test': '系统测试',
-    '/test-connection': '连接测试',
+    // '/system-test': '系统测试',  // 已移除测试模块
+    // '/test-connection': '连接测试',  // 已移除测试模块
     // 用户端页面
     '/customer/dashboard': '主页',
     '/customer/ports': '港口信息',

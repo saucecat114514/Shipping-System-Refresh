@@ -100,11 +100,16 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="船舶" prop="shipId">
-              <el-select v-model="form.shipId" placeholder="请选择船舶" style="width: 100%">
+              <el-select 
+                v-model="form.shipId" 
+                placeholder="请选择船舶" 
+                style="width: 100%"
+                @change="handleShipChange"
+              >
                 <el-option 
                   v-for="ship in ships" 
                   :key="ship.id" 
-                  :label="ship.name" 
+                  :label="`${ship.name} (载重: ${ship.deadweightTonnage}吨)`" 
                   :value="ship.id" 
                 />
               </el-select>
@@ -149,14 +154,17 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="载货量(吨)" prop="cargoWeight">
-              <el-input-number
-                v-model="form.cargoWeight"
-                :min="0"
-                :step="100"
+            <el-form-item label="最大载重(吨)" prop="maxCargoWeight">
+              <el-input
+                v-model="selectedShipDeadweight"
+                readonly
                 style="width: 100%"
-                placeholder="载货量"
-              />
+                placeholder="请先选择船舶"
+              >
+                <template #suffix>
+                  <span style="color: #909399;">自动获取</span>
+                </template>
+              </el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -257,6 +265,7 @@ const dataTableRef = ref()
 // 基础数据
 const routes = ref([])
 const ships = ref([])
+const selectedShipDeadweight = ref('')
 
 // 表单数据
 const form = reactive({
@@ -267,7 +276,6 @@ const form = reactive({
   status: 'PLANNED',
   plannedDepartureTime: '',
   plannedArrivalTime: '',
-  cargoWeight: null,
   estimatedRevenue: null,
   notes: ''
 })
@@ -335,6 +343,18 @@ const deleteVoyageData = async (id) => {
   } catch (error) {
     console.error('删除航次失败:', error)
     throw error
+  }
+}
+
+// 处理船舶选择变化
+const handleShipChange = (shipId) => {
+  if (shipId) {
+    const selectedShip = ships.value.find(ship => ship.id === shipId)
+    if (selectedShip) {
+      selectedShipDeadweight.value = selectedShip.deadweightTonnage || '未知'
+    }
+  } else {
+    selectedShipDeadweight.value = ''
   }
 }
 
@@ -430,10 +450,14 @@ const handleEdit = (row) => {
     status: row.status,
     plannedDepartureTime: row.departureDate,
     plannedArrivalTime: row.arrivalDate,
-    cargoWeight: row.cargoWeight,
     estimatedRevenue: row.estimatedRevenue,
     notes: row.notes
   })
+  
+  // 设置选中船舶的载重
+  if (row.shipId) {
+    handleShipChange(row.shipId)
+  }
   
   dialogVisible.value = true
 }
@@ -562,10 +586,10 @@ const resetForm = () => {
     status: 'PLANNED',
     plannedDepartureTime: '',
     plannedArrivalTime: '',
-    cargoWeight: null,
     estimatedRevenue: null,
     notes: ''
   })
+  selectedShipDeadweight.value = ''
 }
 
 // 组件挂载时加载基础数据

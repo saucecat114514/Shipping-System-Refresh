@@ -109,6 +109,11 @@ export const adminMenuItems = [
         title: '创建订单',
         path: '/orders/create',
         roles: [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
+      },
+      {
+        title: '订单分配',
+        path: '/orders/assignment',
+        roles: [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
       }
     ]
   },
@@ -123,19 +128,20 @@ export const adminMenuItems = [
     icon: Setting,
     path: '/config',
     roles: [USER_ROLES.ADMIN]
-  },
-  {
-    title: '系统测试',
-    icon: Setting,
-    path: '/system-test',
-    roles: [USER_ROLES.ADMIN]
-  },
-  {
-    title: '连接测试',
-    icon: Connection,
-    path: '/test-connection',
-    roles: [USER_ROLES.ADMIN]
   }
+  // 以下测试模块已移除，请勿恢复
+  // {
+  //   title: '系统测试',
+  //   icon: Setting,
+  //   path: '/system-test',
+  //   roles: [USER_ROLES.ADMIN]
+  // },
+  // {
+  //   title: '连接测试',
+  //   icon: Connection,
+  //   path: '/test-connection',
+  //   roles: [USER_ROLES.ADMIN]
+  // }
 ]
 
 // 客户端菜单配置
