@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 
 /**
@@ -76,6 +77,48 @@ public class OrderController {
         logger.info("最终customerId: {}, voyageId: {}", orderRequest.getCustomerId(), orderRequest.getVoyageId());
         
         return orderService.createOrder(orderRequest);
+    }
+
+    /**
+     * 客户创建订单（只选择港口，不选择航次）
+     */
+    @Operation(summary = "客户创建订单", description = "客户创建订单，只需选择出发港口和目的港口，航次由管理员分配")
+    @PostMapping("/customer-create")
+    @RequireRole({"CUSTOMER"})
+    public Result<Order> createCustomerOrder(@Valid @RequestBody OrderRequest orderRequest, HttpServletRequest request) {
+        // 获取当前用户信息
+        String currentUsername = (String) request.getAttribute("currentUser");
+        
+        logger.info("客户创建订单请求 - 用户: {}", currentUsername);
+        
+        // 自动设置客户ID为当前用户
+        if (currentUsername != null) {
+            User currentUser = userService.getUserByUsername(currentUsername);
+            if (currentUser != null) {
+                orderRequest.setCustomerId(currentUser.getId());
+            }
+        }
+
+        // 客户创建的订单不允许直接指定航次
+        orderRequest.setVoyageId(null);
+        orderRequest.setSelectedVoyageId(null);
+        
+        // 验证港口选择
+        if (orderRequest.getOriginPortId() == null || orderRequest.getDestinationPortId() == null) {
+            throw new BusinessException("请选择出发港口和目的港口");
+        }
+        
+        return orderService.createCustomerOrder(orderRequest);
+    }
+
+    /**
+     * 查询待分配航次的订单（管理员使用）
+     */
+    @Operation(summary = "查询待分配航次订单", description = "查询等待分配航次的订单列表，供管理员进行航次分配")
+    @GetMapping("/pending-assignment")
+    @RequireRole({"ADMIN", "DISPATCHER"})
+    public Result<PageResult<Order>> getPendingAssignmentOrders(OrderQueryRequest queryRequest) {
+        return orderService.getPendingAssignmentOrders(queryRequest);
     }
 
     /**
@@ -323,6 +366,34 @@ public class OrderController {
     public Result<Integer> countOrdersByStatus(
             @Parameter(description = "订单状态") @RequestParam String status) {
         return orderService.countOrdersByStatus(status);
+    }
+
+    /**
+     * 获取客户订单统计信息
+     */
+    @Operation(summary = "客户订单统计", description = "获取客户的各状态订单统计数据")
+    @GetMapping("/customer/{customerId}/stats")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
+    public Result<Map<String, Integer>> getCustomerOrderStats(
+            @Parameter(description = "客户ID") @PathVariable Long customerId,
+            HttpServletRequest request) {
+        
+        // 如果是客户角色，只能查看自己的统计
+        String userRole = (String) request.getAttribute("currentUserRole");
+        String username = (String) request.getAttribute("currentUser");
+        
+        if ("CUSTOMER".equals(userRole)) {
+            try {
+                var user = userService.getUserByUsername(username);
+                if (user == null || !user.getId().equals(customerId)) {
+                    throw new BusinessException("您只能查看自己的订单统计");
+                }
+            } catch (Exception e) {
+                throw new BusinessException("用户验证失败");
+            }
+        }
+        
+        return orderService.getCustomerOrderStats(customerId);
     }
 
     /**

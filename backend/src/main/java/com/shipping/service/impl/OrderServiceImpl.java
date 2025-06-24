@@ -17,12 +17,15 @@ import com.shipping.service.OrderService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 订单服务实现类
@@ -268,6 +271,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public Result<Void> assignVoyageToOrder(Long orderId, Long voyageId) {
         Order order = orderMapper.selectById(orderId);
         if (order == null) {
@@ -279,9 +283,38 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("航次不存在，ID：" + voyageId);
         }
 
+        Route route = routeMapper.selectById(voyage.getRouteId());
+        if (route == null) {
+            throw new BusinessException("航线不存在，ID：" + voyage.getRouteId());
+        }
+
+        // 分配航次
         int result = orderMapper.assignVoyage(orderId, voyageId);
+        logger.info("分配航次结果: {}, 订单ID: {}, 航次ID: {}", result, orderId, voyageId);
+        
         if (result > 0) {
-            logger.info("航次分配成功，订单ID: {}, 航次ID: {}", orderId, voyageId);
+            // 计算运价
+            OrderRequest orderRequest = new OrderRequest();
+            BeanUtils.copyProperties(order, orderRequest);
+            
+            BigDecimal basePrice = calculateBasePriceInternal(orderRequest, route.getId());
+            BigDecimal additionalFees = calculateAdditionalFeesInternal(orderRequest);
+            BigDecimal totalPrice = basePrice.add(additionalFees);
+            logger.info("计算运价 - 基础价格: {}, 附加费: {}, 总价: {}", basePrice, additionalFees, totalPrice);
+
+            // 更新运价信息
+            int priceResult = orderMapper.updatePricing(orderId, basePrice, additionalFees, totalPrice);
+            logger.info("更新运价结果: {}", priceResult);
+            
+            // 更新订单状态为PENDING（已分配航次，等待确认）
+            int statusResult = orderMapper.updateStatus(orderId, "PENDING");
+            logger.info("更新状态结果: {}, 新状态: PENDING", statusResult);
+            
+            // 重新查询订单以验证更新
+            Order updatedOrder = orderMapper.selectById(orderId);
+            logger.info("更新后的订单状态: {}, 航次ID: {}, 总价: {}", 
+                       updatedOrder.getStatus(), updatedOrder.getVoyageId(), updatedOrder.getTotalPrice());
+            
             return Result.success();
         } else {
             throw new BusinessException("分配航次失败");
@@ -380,6 +413,80 @@ public class OrderServiceImpl implements OrderService {
         return Result.success();
     }
 
+    @Override
+    public Result<Order> createCustomerOrder(OrderRequest orderRequest) {
+        logger.info("客户创建订单 - 出发港口: {}, 目的港口: {}", 
+                   orderRequest.getOriginPortId(), orderRequest.getDestinationPortId());
+
+        // 检查订单编号是否已存在
+        if (orderRequest.getOrderNumber() == null || orderRequest.getOrderNumber().trim().isEmpty()) {
+            // 生成订单编号
+            orderRequest.setOrderNumber("ORD" + System.currentTimeMillis());
+        }
+        
+        if (orderMapper.existsByOrderNumber(orderRequest.getOrderNumber(), null)) {
+            throw new BusinessException("订单编号已存在：" + orderRequest.getOrderNumber());
+        }
+
+        // 检查客户ID是否提供
+        if (orderRequest.getCustomerId() == null) {
+            throw new BusinessException("客户ID不能为空");
+        }
+
+        // 检查客户是否存在
+        User customer = userMapper.findById(orderRequest.getCustomerId());
+        if (customer == null) {
+            throw new BusinessException("客户不存在，ID：" + orderRequest.getCustomerId());
+        }
+
+        // 验证港口存在性
+        if (orderRequest.getOriginPortId() == null || orderRequest.getDestinationPortId() == null) {
+            throw new BusinessException("出发港口和目的港口不能为空");
+        }
+
+        // 创建订单实体
+        Order order = new Order();
+        BeanUtils.copyProperties(orderRequest, order);
+        
+        // 客户创建的订单状态为待分配航次
+        order.setStatus("PENDING_ASSIGNMENT");
+        order.setVoyageId(null); // 客户不能直接指定航次
+        
+        // 设置默认值
+        if (order.getIsUrgent() == null) {
+            order.setIsUrgent(false);
+        }
+        if (order.getAdditionalFees() == null) {
+            order.setAdditionalFees(BigDecimal.ZERO);
+        }
+        
+        // 暂时不计算价格，等分配航次后再计算
+        order.setBasePrice(BigDecimal.ZERO);
+        order.setTotalPrice(BigDecimal.ZERO);
+        
+        order.setCreatedAt(LocalDateTime.now());
+        order.setUpdatedAt(LocalDateTime.now());
+
+        // 插入数据库
+        int result = orderMapper.insert(order);
+        if (result > 0) {
+            logger.info("客户订单创建成功，ID: {}, 状态: PENDING_ASSIGNMENT", order.getId());
+            return Result.success(order);
+        } else {
+            throw new BusinessException("创建订单失败");
+        }
+    }
+
+    @Override
+    public Result<PageResult<Order>> getPendingAssignmentOrders(OrderQueryRequest queryRequest) {
+        logger.info("查询待分配航次的订单");
+        
+        // 设置查询条件为待分配状态
+        queryRequest.setStatus("PENDING_ASSIGNMENT");
+        
+        return getOrderPageWithDetails(queryRequest);
+    }
+
     /**
      * 计算基础运价
      */
@@ -445,6 +552,27 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return additionalFees.setScale(2, BigDecimal.ROUND_HALF_UP);
+    }
+
+    @Override
+    public Result<Map<String, Integer>> getCustomerOrderStats(Long customerId) {
+        logger.info("获取客户订单统计信息，客户ID: {}", customerId);
+        
+        List<Order> allOrders = orderMapper.selectCustomerOrders(customerId, null);
+        
+        Map<String, Integer> stats = new HashMap<>();
+        stats.put("totalOrders", allOrders.size());
+        stats.put("pendingOrders", (int) allOrders.stream()
+                .filter(o -> "PENDING".equals(o.getStatus()) || "PENDING_ASSIGNMENT".equals(o.getStatus()))
+                .count());
+        stats.put("shippingOrders", (int) allOrders.stream()
+                .filter(o -> "IN_TRANSIT".equals(o.getStatus()))
+                .count());
+        stats.put("completedOrders", (int) allOrders.stream()
+                .filter(o -> "DELIVERED".equals(o.getStatus()) || "COMPLETED".equals(o.getStatus()))
+                .count());
+        
+        return Result.success(stats);
     }
 
     /**

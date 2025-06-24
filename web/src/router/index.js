@@ -2,12 +2,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
 import SimpleTest from '@/views/SimpleTest.vue'
-import SystemTest from '@/views/SystemTest.vue'
+// import SystemTest from '@/views/SystemTest.vue'  // 系统测试模块已移除
 import MainLayout from '@/layout/MainLayout.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import PortList from '@/views/Port/PortList.vue'
 import PortMap from '@/views/Port/PortMap.vue'
-import TestPortAPI from '@/views/TestPortAPI.vue'
+// import TestPortAPI from '@/views/TestPortAPI.vue'  // 测试端口API已移除
 import ShipList from '@/views/Ship/ShipList.vue'
 import ShipManagement from '@/views/Ship/ShipManagement.vue'
 import ShipTracking from '@/views/Ship/ShipTracking.vue'
@@ -20,12 +20,13 @@ import VoyageSchedule from '@/views/Voyage/VoyageSchedule.vue'
 // 订单管理模块
 import OrderList from '@/views/Order/OrderList.vue'
 import OrderCreate from '@/views/Order/OrderCreate.vue'
+import OrderAssignment from '@/views/Order/OrderAssignment.vue'
 // 用户管理模块
 import UserManagement from '@/views/User/UserManagement.vue'
 // 系统配置模块
 import SystemConfig from '@/views/Config/SystemConfig.vue'
-// 连接测试模块
-import TestConnection from '@/views/TestConnection.vue'
+// 连接测试模块已移除
+// import TestConnection from '@/views/TestConnection.vue'
 
 // 用户端页面模块
 import CustomerDashboard from '@/views/Customer/CustomerDashboard.vue'
@@ -35,6 +36,7 @@ import CustomerRouteList from '@/views/Customer/CustomerRouteList.vue'
 import CustomerVoyageList from '@/views/Customer/CustomerVoyageList.vue'
 import CustomerMyOrders from '@/views/Customer/Order/CustomerMyOrders.vue'
 import CustomerOrderEdit from '@/views/Customer/Order/CustomerOrderEdit.vue'
+import CustomerOrderCreate from '@/views/Customer/Order/CustomerOrderCreate.vue'
 
 
 // import QuickTest from '@/views/QuickTest.vue'
@@ -69,17 +71,17 @@ const router = createRouter({
     //   name: 'debugPort',
     //   component: DebugPortList
     // },
-    {
-      path: '/system-test',
-      component: MainLayout,
-      children: [
-        {
-          path: '',
-          name: 'systemTest',
-          component: SystemTest
-        }
-      ]
-    },
+    // {
+    //   path: '/system-test',
+    //   component: MainLayout,
+    //   children: [
+    //     {
+    //       path: '',
+    //       name: 'systemTest',
+    //       component: SystemTest
+    //     }
+    //   ]
+    // },
     {
       path: '/',
       redirect: '/login'
@@ -178,6 +180,11 @@ const router = createRouter({
           path: 'create',
           name: 'orderCreate',
           component: OrderCreate
+        },
+        {
+          path: 'assignment',
+          name: 'orderAssignment',
+          component: OrderAssignment
         }
       ]
     },
@@ -203,17 +210,17 @@ const router = createRouter({
         }
       ]
     },
-    {
-      path: '/test-port',
-      component: MainLayout,
-      children: [
-        {
-          path: '',
-          name: 'testPort',
-          component: TestPortAPI
-        }
-      ]
-    },
+    // {
+    //   path: '/test-port',
+    //   component: MainLayout,
+    //   children: [
+    //     {
+    //       path: '',
+    //       name: 'testPort',
+    //       component: TestPortAPI
+    //     }
+    //   ]
+    // },
     // {
     //   path: '/role-test',
     //   component: MainLayout,
@@ -278,7 +285,12 @@ const router = createRouter({
         {
           path: 'orders/create',
           name: 'customerOrderCreate',
-          component: OrderCreate
+          component: CustomerOrderCreate
+        },
+        {
+          path: 'orders/assignment',
+          name: 'customerOrderAssignment',
+          component: OrderAssignment
         }
       ]
     }

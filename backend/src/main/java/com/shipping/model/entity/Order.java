@@ -22,6 +22,12 @@ public class Order {
     @Schema(description = "航次ID")
     private Long voyageId;
 
+    @Schema(description = "起始港口ID")
+    private Long originPortId;
+
+    @Schema(description = "目的港口ID")
+    private Long destinationPortId;
+
     @Schema(description = "货物名称")
     private String cargoName;
 
@@ -122,6 +128,22 @@ public class Order {
 
     public void setVoyageId(Long voyageId) {
         this.voyageId = voyageId;
+    }
+
+    public Long getOriginPortId() {
+        return originPortId;
+    }
+
+    public void setOriginPortId(Long originPortId) {
+        this.originPortId = originPortId;
+    }
+
+    public Long getDestinationPortId() {
+        return destinationPortId;
+    }
+
+    public void setDestinationPortId(Long destinationPortId) {
+        this.destinationPortId = destinationPortId;
     }
 
     public String getCargoName() {

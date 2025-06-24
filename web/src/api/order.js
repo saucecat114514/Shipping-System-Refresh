@@ -10,41 +10,55 @@ export function getOrderList(params) {
 }
 
 // 获取客户的订单列表
-export function getCustomerOrders(params) {
-  // 从localStorage获取当前用户ID
-  const userStr = localStorage.getItem('user')
-  const token = localStorage.getItem('token')
-  
-  if (!userStr || !token) {
-    return Promise.reject(new Error('用户未登录'))
-  }
-  
-  try {
-    const user = JSON.parse(userStr)
-    const customerId = user.userId || user.id  // 兼容不同的字段名
-    
-    if (!customerId) {
-      console.error('用户对象:', user)
-      return Promise.reject(new Error('用户ID无效'))
-    }
-    
-    return request({
-      url: `/orders/customer/${customerId}/orders`,
-      method: 'get',
-      params
-    })
-  } catch (error) {
-    console.error('解析用户信息失败:', error)
-    return Promise.reject(new Error('用户信息解析失败'))
-  }
+export function getCustomerOrders(customerId, status) {
+  return request({
+    url: `/orders/customer/${customerId}/orders`,
+    method: 'get',
+    params: { status }
+  })
+}
+
+// 统计订单数量（按状态）
+export function countOrdersByStatus(status) {
+  return request({
+    url: '/orders/count-by-status',
+    method: 'get',
+    params: { status }
+  })
+}
+
+// 获取客户订单统计信息
+export function getCustomerOrderStats(customerId) {
+  return request({
+    url: `/orders/customer/${customerId}/stats`,
+    method: 'get'
+  })
 }
 
 // 创建订单
-export function createOrder(data) {
+export const createOrder = (data) => {
   return request({
     url: '/orders',
     method: 'post',
     data
+  })
+}
+
+// 客户创建订单（只选择港口）
+export const createCustomerOrder = (data) => {
+  return request({
+    url: '/orders/customer-create',
+    method: 'post',
+    data
+  })
+}
+
+// 获取待分配航次的订单（管理员使用）
+export const getPendingAssignmentOrders = (params) => {
+  return request({
+    url: '/orders/pending-assignment',
+    method: 'get',
+    params
   })
 }
 
@@ -96,5 +110,39 @@ export function calculateOrderPrice(data) {
     url: '/orders/calculate-price',
     method: 'post',
     data
+  })
+}
+
+// 分配航次给订单
+export function assignVoyageToOrder(orderId, voyageId) {
+  return request({
+    url: `/orders/${orderId}/assign-voyage`,
+    method: 'patch',
+    params: {
+      voyageId: voyageId
+    }
+  })
+}
+
+// 确认订单（分配航次并计算运价）
+export function confirmOrder(orderId, voyageId) {
+  return request({
+    url: `/orders/${orderId}/confirm`,
+    method: 'post',
+    params: {
+      voyageId: voyageId
+    }
+  })
+}
+
+// 批量更新订单状态
+export function batchUpdateOrderStatus(voyageId, status) {
+  return request({
+    url: '/orders/batch-update-status',
+    method: 'patch',
+    params: {
+      voyageId: voyageId,
+      status: status
+    }
   })
 } 

@@ -8,6 +8,7 @@ import com.shipping.model.dto.OrderQueryRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单服务接口
@@ -18,6 +19,16 @@ public interface OrderService {
      * 创建订单
      */
     Result<Order> createOrder(OrderRequest orderRequest);
+
+    /**
+     * 客户创建订单（只选择港口，不分配航次）
+     */
+    Result<Order> createCustomerOrder(OrderRequest orderRequest);
+
+    /**
+     * 查询待分配航次的订单
+     */
+    Result<PageResult<Order>> getPendingAssignmentOrders(OrderQueryRequest queryRequest);
 
     /**
      * 删除订单
@@ -103,4 +114,9 @@ public interface OrderService {
      * 批量更新订单状态（用于航次状态变更时）
      */
     Result<Void> batchUpdateOrderStatus(Long voyageId, String status);
+
+    /**
+     * 获取客户订单统计信息
+     */
+    Result<Map<String, Integer>> getCustomerOrderStats(Long customerId);
 } 

@@ -7,7 +7,7 @@
       :load-data="loadOrderData"
       :delete-data="deleteOrderData"
       :show-actions="false"
-      @add="handleAdd"
+      :show-add="false"
       @edit="handleEdit"
     >
       <!-- 自定义列插槽 -->
@@ -44,10 +44,26 @@
         </el-button>
         <el-button 
           link 
+          type="warning" 
+          size="small"
+          @click="handleAssignVoyage(row)" 
+          v-if="row.status === 'PENDING_ASSIGNMENT'">
+          分配航次
+        </el-button>
+        <el-button 
+          link 
+          type="primary" 
+          size="small"
+          @click="handleEdit(row)" 
+          v-if="row.status === 'PENDING_ASSIGNMENT'">
+          编辑
+        </el-button>
+        <el-button 
+          link 
           type="danger" 
           size="small"
           @click="handleCancel(row)" 
-          v-if="row.status === 'PENDING' || row.status === 'CONFIRMED'">
+          v-if="row.status === 'PENDING' || row.status === 'CONFIRMED' || row.status === 'PENDING_ASSIGNMENT'">
           取消
         </el-button>
       </template>
@@ -196,6 +212,7 @@
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
+                <el-option label="待分配航次" value="PENDING_ASSIGNMENT" />
                 <el-option label="待确认" value="PENDING" />
                 <el-option label="已确认" value="CONFIRMED" />
                 <el-option label="运输中" value="IN_TRANSIT" />
@@ -247,6 +264,94 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 航次分配弹窗 -->
+    <el-dialog
+      v-model="assignDialogVisible"
+      title="分配航次"
+      width="800px"
+      @close="resetAssignForm"
+    >
+      <div v-if="selectedOrder" class="assign-content">
+        <!-- 订单信息 -->
+        <el-descriptions title="订单信息" :column="2" border class="order-info">
+          <el-descriptions-item label="订单号">
+            {{ selectedOrder.orderNumber }}
+          </el-descriptions-item>
+          <el-descriptions-item label="客户">
+            {{ selectedOrder.customer?.username || '未知客户' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="货物名称">
+            {{ selectedOrder.cargoName }}
+          </el-descriptions-item>
+          <el-descriptions-item label="货物类型">
+            {{ selectedOrder.cargoType }}
+          </el-descriptions-item>
+          <el-descriptions-item label="重量">
+            {{ selectedOrder.cargoWeight }} 吨
+          </el-descriptions-item>
+          <el-descriptions-item label="体积">
+            {{ selectedOrder.cargoVolume }} 立方米
+          </el-descriptions-item>
+          <el-descriptions-item label="出发港口">
+            {{ getPortName(selectedOrder.originPortId) }}
+          </el-descriptions-item>
+          <el-descriptions-item label="目的港口">
+            {{ getPortName(selectedOrder.destinationPortId) }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <!-- 航次选择 -->
+        <div class="voyage-selection">
+          <h4>选择合适的航次</h4>
+          <el-table 
+            :data="availableVoyages" 
+            v-loading="voyageLoading"
+            @current-change="selectVoyage"
+            highlight-current-row
+            stripe
+          >
+            <el-table-column prop="voyageNumber" label="航次编号" width="120" />
+            <el-table-column label="航线" width="200">
+              <template #default="{ row }">
+                {{ row.route?.name || '未知航线' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="起止港口" width="250">
+              <template #default="{ row }">
+                <div>
+                  {{ row.route?.originPort?.nameCn || '未知' }} → 
+                  {{ row.route?.destinationPort?.nameCn || '未知' }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column prop="departureDate" label="发船时间" width="120" />
+            <el-table-column prop="arrivalDate" label="到达时间" width="120" />
+            <el-table-column prop="status" label="状态" width="100">
+              <template #default="{ row }">
+                <el-tag :type="getVoyageStatusType(row.status)" size="small">
+                  {{ getVoyageStatusText(row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="assignDialogVisible = false">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="confirmAssignment"
+            :loading="assigning"
+            :disabled="!selectedVoyage"
+          >
+            确认分配
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -254,8 +359,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import DataTable from '@/components/DataTable.vue'
-import { getOrderList, createOrder, updateOrder, deleteOrder } from '@/api/order'
+import { getOrderList, createOrder, updateOrder, deleteOrder, assignVoyageToOrder } from '@/api/order'
 import { getPortList } from '@/api/port'
+import { getVoyageList } from '@/api/voyage'
 
 // 表格列配置
 const columns = [
@@ -291,6 +397,7 @@ const searchConfig = [
     type: 'select',
     placeholder: '请选择状态',
     options: [
+      { label: '待分配航次', value: 'PENDING_ASSIGNMENT' },
       { label: '待确认', value: 'PENDING' },
       { label: '已确认', value: 'CONFIRMED' },
       { label: '运输中', value: 'IN_TRANSIT' },
@@ -318,6 +425,14 @@ const dialogTitle = ref('')
 const isEdit = ref(false)
 const formRef = ref()
 const dataTableRef = ref()
+
+// 航次分配相关
+const assignDialogVisible = ref(false)
+const voyageLoading = ref(false)
+const assigning = ref(false)
+const selectedOrder = ref(null)
+const selectedVoyage = ref(null)
+const availableVoyages = ref([])
 
 // 基础数据
 const ports = ref([])
@@ -392,6 +507,7 @@ const getTransportModeLabel = (mode) => {
 // 获取状态标签
 const getStatusLabel = (status) => {
   const statusMap = {
+    'PENDING_ASSIGNMENT': '待分配航次',
     'PENDING': '待确认',
     'CONFIRMED': '已确认',
     'IN_TRANSIT': '运输中',
@@ -404,6 +520,7 @@ const getStatusLabel = (status) => {
 // 获取状态类型
 const getStatusType = (status) => {
   const typeMap = {
+    'PENDING_ASSIGNMENT': 'warning',
     'PENDING': 'warning',
     'CONFIRMED': 'primary',
     'IN_TRANSIT': 'success',
@@ -538,6 +655,133 @@ const handleCancel = (row) => {
   })
 }
 
+// 分配航次
+const handleAssignVoyage = async (row) => {
+  selectedOrder.value = row
+  selectedVoyage.value = null
+  assignDialogVisible.value = true
+  
+  // 加载可用航次
+  await loadAvailableVoyages(row)
+}
+
+// 加载可用航次
+const loadAvailableVoyages = async (order) => {
+  try {
+    voyageLoading.value = true
+    console.log('加载航次，订单港口信息:', {
+      originPortId: order.originPortId,
+      destinationPortId: order.destinationPortId
+    })
+    
+    const response = await getVoyageList({
+      page: 1,
+      size: 100,
+      status: 'PLANNED' // 只显示已计划的航次
+    })
+    
+    if (response.code === 200) {
+      console.log('所有航次数据:', response.data.records)
+      
+      // 过滤出符合港口要求的航次
+      availableVoyages.value = (response.data.records || []).filter(voyage => {
+        const isMatch = voyage.route && 
+               voyage.route.originPort?.id === order.originPortId &&
+               voyage.route.destinationPort?.id === order.destinationPortId
+        
+        console.log('航次匹配检查:', {
+          voyageId: voyage.id,
+          voyageNumber: voyage.voyageNumber,
+          routeOriginPortId: voyage.route?.originPort?.id,
+          routeDestinationPortId: voyage.route?.destinationPort?.id,
+          orderOriginPortId: order.originPortId,
+          orderDestinationPortId: order.destinationPortId,
+          isMatch
+        })
+        
+        return isMatch
+      })
+      
+      console.log('筛选后的航次:', availableVoyages.value)
+    }
+  } catch (error) {
+    console.error('加载航次数据失败:', error)
+    ElMessage.error('加载航次数据失败')
+  } finally {
+    voyageLoading.value = false
+  }
+}
+
+// 选择航次
+const selectVoyage = (voyage) => {
+  selectedVoyage.value = voyage
+}
+
+// 确认分配
+const confirmAssignment = async () => {
+  if (!selectedVoyage.value) {
+    ElMessage.warning('请选择航次')
+    return
+  }
+
+  try {
+    assigning.value = true
+    const response = await assignVoyageToOrder(selectedOrder.value.id, selectedVoyage.value.id)
+    
+    if (response.code === 200) {
+      ElMessage.success('航次分配成功')
+      assignDialogVisible.value = false
+      // 刷新列表
+      if (dataTableRef.value) {
+        dataTableRef.value.refresh()
+      }
+    } else {
+      ElMessage.error(response.msg || '分配航次失败')
+    }
+  } catch (error) {
+    console.error('分配航次失败:', error)
+    ElMessage.error('分配航次失败')
+  } finally {
+    assigning.value = false
+  }
+}
+
+// 重置分配表单
+const resetAssignForm = () => {
+  selectedOrder.value = null
+  selectedVoyage.value = null
+  availableVoyages.value = []
+}
+
+// 根据港口ID获取港口名称
+const getPortName = (portId) => {
+  if (!portId) return '未选择'
+  const port = ports.value.find(p => p.id === portId)
+  return port ? `${port.nameCn || port.name} (${port.nameEn || port.code})` : '未知港口'
+}
+
+// 航次状态类型
+const getVoyageStatusType = (status) => {
+  const statusMap = {
+    'PLANNED': 'primary',
+    'IN_PROGRESS': 'warning',
+    'COMPLETED': 'success',
+    'CANCELLED': 'danger'
+  }
+  return statusMap[status] || 'info'
+}
+
+// 航次状态文本
+const getVoyageStatusText = (status) => {
+  const statusMap = {
+    'PLANNED': '已计划',
+    'IN_PROGRESS': '进行中',
+    'COMPLETED': '已完成',
+    'CANCELLED': '已取消'
+  }
+  return statusMap[status] || '未知'
+}
+
 // 提交表单
 const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
@@ -634,5 +878,24 @@ onMounted(() => {
 /* 确保固定列的阴影效果 */
 :deep(.el-table__fixed-right) {
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 航次分配弹窗样式 */
+.assign-content {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.order-info {
+  margin-bottom: 20px;
+}
+
+.voyage-selection h4 {
+  margin: 20px 0 10px 0;
+  color: #303133;
+}
+
+:deep(.el-descriptions__label) {
+  font-weight: 500;
 }
 </style> 
