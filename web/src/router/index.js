@@ -145,12 +145,13 @@ const router = createRouter({
           path: '',
           name: 'voyageList',
           component: VoyageList
-        },
-        {
-          path: 'schedule',
-          name: 'voyageSchedule',
-          component: VoyageSchedule
         }
+        // 隐藏航次调度页面路由
+        // {
+        //   path: 'schedule',
+        //   name: 'voyageSchedule',
+        //   component: VoyageSchedule
+        // }
       ]
     },
     {
