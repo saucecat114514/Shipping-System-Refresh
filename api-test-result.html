@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API连接测试结果</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        .test-item { margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 API连接测试结果</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(title, status, data) {
+            const div = document.createElement('div');
+            div.className = 'test-item';
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <p class="${status}">${status === 'success' ? '✅ 成功' : '❌ 失败'}</p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+        
+        // 测试健康检查API
+        fetch('http://localhost:8080/api/test/health')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                addResult('健康检查 API', 'success', data);
+            })
+            .catch(error => {
+                addResult('健康检查 API', 'error', { error: error.message });
+            });
+        
+        // 测试港口API
+        fetch('http://localhost:8080/api/ports')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                addResult('港口列表 API', 'success', data);
+            })
+            .catch(error => {
+                addResult('港口列表 API', 'error', { error: error.message });
+            });
+        
+        // 测试前端代理 (通过Vite代理)
+        fetch('/api/test/health')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            })
+            .then(data => {
+                addResult('前端代理 API (Vite)', 'success', data);
+            })
+            .catch(error => {
+                addResult('前端代理 API (Vite)', 'error', { error: error.message });
+            });
+    </script>
+</body>
+</html> 
