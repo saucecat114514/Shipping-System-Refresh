@@ -26,6 +26,16 @@ import UserManagement from '@/views/User/UserManagement.vue'
 import SystemConfig from '@/views/Config/SystemConfig.vue'
 // 连接测试模块
 import TestConnection from '@/views/TestConnection.vue'
+
+// 用户端页面模块
+import CustomerDashboard from '@/views/Customer/CustomerDashboard.vue'
+import CustomerPortList from '@/views/Customer/Port/CustomerPortList.vue'
+import CustomerShipList from '@/views/Customer/Ship/CustomerShipList.vue'
+import CustomerRouteList from '@/views/Customer/CustomerRouteList.vue'
+import CustomerVoyageList from '@/views/Customer/CustomerVoyageList.vue'
+import CustomerMyOrders from '@/views/Customer/Order/CustomerMyOrders.vue'
+import CustomerOrderEdit from '@/views/Customer/Order/CustomerOrderEdit.vue'
+
 // import QuickTest from '@/views/QuickTest.vue'
 // import DebugPortList from '@/views/DebugPortList.vue'
 // import RoleTest from '@/views/RoleTest.vue'
@@ -224,11 +234,64 @@ const router = createRouter({
         }
       ]
     },
-    // {
-    //   path: '/test-voyage-order',
-    //   name: 'testVoyageOrder',
-    //   component: () => import('@/views/TestVoyageOrder.vue')
-    // }
+    // 用户端路由配置
+    {
+      path: '/customer',
+      component: MainLayout,
+      redirect: '/customer/dashboard',
+      children: [
+        {
+          path: 'dashboard',
+          name: 'customerDashboard',
+          component: CustomerDashboard
+        },
+        {
+          path: 'ports',
+          name: 'customerPortList',
+          component: CustomerPortList
+        },
+        {
+          path: 'ports/map',
+          name: 'customerPortMap',
+          component: PortMap
+        },
+        {
+          path: 'ships',
+          name: 'customerShipList',
+          component: CustomerShipList
+        },
+        {
+          path: 'ships/tracking',
+          name: 'customerShipTracking',
+          component: ShipTracking
+        },
+        {
+          path: 'routes',
+          name: 'customerRouteList',
+          component: CustomerRouteList
+        },
+        {
+          path: 'voyages',
+          name: 'customerVoyageList',
+          component: CustomerVoyageList
+        },
+        {
+          path: 'orders',
+          name: 'customerMyOrders',
+          component: CustomerMyOrders
+        },
+        {
+          path: 'orders/edit',
+          name: 'customerOrderEdit',
+          component: CustomerOrderEdit
+        },
+        {
+          path: 'orders/create',
+          name: 'customerOrderCreate',
+          component: OrderCreate
+        }
+      ]
+    }
   ],
 })
 

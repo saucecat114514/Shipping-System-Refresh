@@ -3,6 +3,7 @@ package com.shipping.controller;
 import com.shipping.common.PageResult;
 import com.shipping.common.Result;
 import com.shipping.config.RoleInterceptor.RequireRole;
+import com.shipping.exception.BusinessException;
 import com.shipping.model.entity.Order;
 import com.shipping.model.entity.User;
 import com.shipping.model.dto.OrderRequest;
@@ -333,5 +334,48 @@ public class OrderController {
             @Parameter(description = "航次ID") @RequestParam Long voyageId,
             @Parameter(description = "新状态") @RequestParam String status) {
         return orderService.batchUpdateOrderStatus(voyageId, status);
+    }
+
+    /**
+     * 取消订单（客户端专用）
+     */
+    @Operation(summary = "取消订单", description = "客户取消自己的订单，只有待处理和已确认状态的订单可以取消")
+    @PutMapping("/{id}/cancel")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
+    public Result<Void> cancelOrder(
+            @Parameter(description = "订单ID") @PathVariable Long id,
+            HttpServletRequest request) {
+        
+        // 获取当前用户信息
+        String username = (String) request.getAttribute("username");
+        String role = (String) request.getAttribute("role");
+        
+        // 检查订单是否存在
+        Result<Order> orderResult = orderService.getOrderById(id);
+        if (orderResult.getCode() != 200 || orderResult.getData() == null) {
+            throw new BusinessException("订单不存在");
+        }
+        
+        Order order = orderResult.getData();
+        
+        // 如果是客户角色，需要验证订单归属
+        if ("CUSTOMER".equals(role)) {
+            try {
+                var userResult = userService.getUserByUsername(username);
+                if (userResult == null || !userResult.getId().equals(order.getCustomerId())) {
+                    throw new BusinessException("无权操作此订单");
+                }
+            } catch (Exception e) {
+                throw new BusinessException("用户验证失败");
+            }
+        }
+        
+        // 检查订单状态是否允许取消
+        if (!"PENDING".equals(order.getStatus()) && !"CONFIRMED".equals(order.getStatus())) {
+            throw new BusinessException("当前状态的订单不允许取消");
+        }
+        
+        // 更新订单状态为已取消
+        return orderService.updateOrderStatus(id, "CANCELLED");
     }
 } 

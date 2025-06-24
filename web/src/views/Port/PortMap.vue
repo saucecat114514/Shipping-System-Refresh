@@ -34,7 +34,7 @@
             </div>
           </template>
           <el-table :data="filteredPorts" style="width: 100%" size="small" height="calc(100vh - 200px)" v-loading="loading">
-            <el-table-column prop="nameEn" label="港口名称" />
+            <el-table-column prop="nameCn" label="港口名称" />
             <el-table-column prop="country" label="所在国家" />
             <el-table-column label="操作" width="80">
               <template #default="scope">
@@ -70,7 +70,7 @@
             <el-card class="port-detail-card">
               <template #header>
                 <div class="card-header">
-                  <span>港口详情 - {{ selectedPort.nameEn }}</span>
+                  <span>港口详情 - {{ selectedPort.nameCn || selectedPort.nameEn }}</span>
                   <el-tag>正常运营</el-tag>
                 </div>
               </template>
@@ -226,7 +226,7 @@ const addPortMarkers = () => {
     // 创建标记点
     const marker = new window.AMap.Marker({
       position: [port.longitude, port.latitude],
-      title: port.nameEn,
+      title: port.nameCn || port.nameEn,
       icon: new window.AMap.Icon({
         image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
         size: new window.AMap.Size(25, 34),
@@ -247,7 +247,7 @@ const addPortMarkers = () => {
       const infoWindow = new window.AMap.InfoWindow({
         content: `
           <div style="padding: 10px; min-width: 200px;">
-            <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameEn}</h4>
+            <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameCn || port.nameEn}</h4>
             <p style="margin: 5px 0; color: #666;">
               <strong>港口代码:</strong> ${port.code}<br>
               <strong>所在国家:</strong> ${port.country}<br>
@@ -291,7 +291,7 @@ const focusPort = (port) => {
     const infoWindow = new window.AMap.InfoWindow({
       content: `
         <div style="padding: 10px; min-width: 200px;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameEn}</h4>
+          <h4 style="margin: 0 0 10px 0; color: #333;">${port.nameCn || port.nameEn}</h4>
           <p style="margin: 5px 0; color: #666;">
             <strong>港口代码:</strong> ${port.code}<br>
             <strong>所在国家:</strong> ${port.country}<br>

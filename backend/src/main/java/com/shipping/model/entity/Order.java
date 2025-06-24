@@ -65,6 +65,19 @@ public class Order {
     @Schema(description = "航次信息")
     private Voyage voyage;
 
+    // 扩展字段（用于显示）
+    @Schema(description = "船舶名称")
+    private String shipName;
+
+    @Schema(description = "起始港口名称")
+    private String originPortName;
+
+    @Schema(description = "目的港口名称")
+    private String destinationPortName;
+
+    @Schema(description = "航线名称")
+    private String routeName;
+
     public Order() {}
 
     public Order(String orderNumber, Long customerId, String cargoName, String cargoType, BigDecimal cargoWeight) {
@@ -221,6 +234,38 @@ public class Order {
 
     public void setVoyage(Voyage voyage) {
         this.voyage = voyage;
+    }
+
+    public String getShipName() {
+        return shipName;
+    }
+
+    public void setShipName(String shipName) {
+        this.shipName = shipName;
+    }
+
+    public String getOriginPortName() {
+        return originPortName;
+    }
+
+    public void setOriginPortName(String originPortName) {
+        this.originPortName = originPortName;
+    }
+
+    public String getDestinationPortName() {
+        return destinationPortName;
+    }
+
+    public void setDestinationPortName(String destinationPortName) {
+        this.destinationPortName = destinationPortName;
+    }
+
+    public String getRouteName() {
+        return routeName;
+    }
+
+    public void setRouteName(String routeName) {
+        this.routeName = routeName;
     }
 
     @Override
