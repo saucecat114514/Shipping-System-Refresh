@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 public class RouteRequest {
 
     @Schema(description = "航线编号", example = "R001")
-    @NotBlank(message = "航线编号不能为空")
     @Size(max = 20, message = "航线编号长度不能超过20字符")
     private String routeNumber;
 
@@ -32,7 +31,6 @@ public class RouteRequest {
     private Long destinationPortId;
 
     @Schema(description = "航程距离（公里）", example = "11000.50")
-    @NotNull(message = "航程距离不能为空")
     @Min(value = 0, message = "航程距离不能为负数")
     private BigDecimal distance;
 

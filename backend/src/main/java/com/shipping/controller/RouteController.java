@@ -4,9 +4,11 @@ import com.shipping.common.PageResult;
 import com.shipping.common.Result;
 import com.shipping.config.RoleInterceptor.RequireRole;
 import com.shipping.model.entity.Route;
+import com.shipping.model.entity.Port;
 import com.shipping.model.dto.RouteRequest;
 import com.shipping.model.dto.RouteQueryRequest;
 import com.shipping.service.RouteService;
+import com.shipping.service.PortService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +29,9 @@ public class RouteController {
 
     @Autowired
     private RouteService routeService;
+
+    @Autowired
+    private PortService portService;
 
     /**
      * 创建航线
@@ -103,5 +108,14 @@ public class RouteController {
     @GetMapping("/all")
     public Result<List<Route>> getAllRoutes() {
         return routeService.getAllRoutes();
+    }
+
+    /**
+     * 获取港口列表（用于创建航线时选择）
+     */
+    @Operation(summary = "获取港口列表", description = "获取所有启用的港口列表，用于创建航线时选择")
+    @GetMapping("/ports")
+    public Result<List<Port>> getAllPorts() {
+        return portService.getAllPorts();
     }
 } 

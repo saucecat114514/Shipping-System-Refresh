@@ -26,9 +26,9 @@ import UserManagement from '@/views/User/UserManagement.vue'
 import SystemConfig from '@/views/Config/SystemConfig.vue'
 // 连接测试模块
 import TestConnection from '@/views/TestConnection.vue'
-import QuickTest from '@/views/QuickTest.vue'
-import DebugPortList from '@/views/DebugPortList.vue'
-import RoleTest from '@/views/RoleTest.vue'
+// import QuickTest from '@/views/QuickTest.vue'
+// import DebugPortList from '@/views/DebugPortList.vue'
+// import RoleTest from '@/views/RoleTest.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,16 +48,16 @@ const router = createRouter({
       name: 'simpleTest',
       component: SimpleTest
     },
-    {
-      path: '/quick-test',
-      name: 'quickTest',
-      component: QuickTest
-    },
-    {
-      path: '/debug-port',
-      name: 'debugPort',
-      component: DebugPortList
-    },
+    // {
+    //   path: '/quick-test',
+    //   name: 'quickTest',
+    //   component: QuickTest
+    // },
+    // {
+    //   path: '/debug-port',
+    //   name: 'debugPort',
+    //   component: DebugPortList
+    // },
     {
       path: '/system-test',
       component: MainLayout,
@@ -202,17 +202,17 @@ const router = createRouter({
         }
       ]
     },
-    {
-      path: '/role-test',
-      component: MainLayout,
-      children: [
-        {
-          path: '',
-          name: 'roleTest',
-          component: RoleTest
-        }
-      ]
-    },
+    // {
+    //   path: '/role-test',
+    //   component: MainLayout,
+    //   children: [
+    //     {
+    //       path: '',
+    //       name: 'roleTest',
+    //       component: RoleTest
+    //     }
+    //   ]
+    // },
     {
       path: '/test-connection',
       component: MainLayout,
@@ -224,11 +224,11 @@ const router = createRouter({
         }
       ]
     },
-    {
-      path: '/test-voyage-order',
-      name: 'testVoyageOrder',
-      component: () => import('@/views/TestVoyageOrder.vue')
-    }
+    // {
+    //   path: '/test-voyage-order',
+    //   name: 'testVoyageOrder',
+    //   component: () => import('@/views/TestVoyageOrder.vue')
+    // }
   ],
 })
 
@@ -237,7 +237,7 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   
   // 允许访问的公开页面
-  const publicPages = ['/login', '/test', '/quick-test']
+  const publicPages = ['/login', '/test']
   
   // 如果是公开页面，直接允许访问
   if (publicPages.includes(to.path)) {
