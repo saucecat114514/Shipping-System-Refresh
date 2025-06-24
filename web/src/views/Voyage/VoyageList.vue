@@ -30,7 +30,6 @@
       </template>
 
       <template #extraActions="{ row }">
-        <el-button link type="primary" size="small" @click="handleView(row)">查看</el-button>
         <el-button 
           link 
           type="primary" 
@@ -210,7 +209,7 @@ const columns = [
   { prop: 'departureDate', label: '计划出发', width: 140, minWidth: 120 },
   { prop: 'arrivalDate', label: '计划到达', width: 140, minWidth: 120 },
   { prop: 'deadweightTonnage', label: '载重量(吨)', width: 110, minWidth: 100, align: 'right', slot: 'deadweightTonnage' },
-  { prop: 'extraActions', label: '航次操作', width: 240, minWidth: 200, slot: 'extraActions', fixed: 'right' }
+  { prop: 'extraActions', label: '航次操作', width: 200, minWidth: 160, slot: 'extraActions', fixed: 'right' }
 ]
 
 // 搜索配置
@@ -437,12 +436,6 @@ const handleEdit = (row) => {
   })
   
   dialogVisible.value = true
-}
-
-// 查看详情
-const handleView = (row) => {
-  // TODO: 实现查看详情功能
-  ElMessage.info('查看功能待实现')
 }
 
 // 开始航次

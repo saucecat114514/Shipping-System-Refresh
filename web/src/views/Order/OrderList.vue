@@ -1,11 +1,12 @@
 <template>
-  <div class="order-list">
+    <div class="order-list">
     <DataTable
       ref="dataTableRef"
       :columns="columns"
       :search-config="searchConfig"
       :load-data="loadOrderData"
       :delete-data="deleteOrderData"
+      :show-actions="false"
       @add="handleAdd"
       @edit="handleEdit"
     >
@@ -24,11 +25,11 @@
         </el-tag>
       </template>
 
-      <template #actions="{ row }">
-        <el-button link type="primary" @click="handleView(row)">查看</el-button>
+      <template #extraActions="{ row }">
         <el-button 
           link 
           type="primary" 
+          size="small"
           @click="handleEdit(row)" 
           v-if="row.status === 'PENDING'">
           编辑
@@ -36,6 +37,7 @@
         <el-button 
           link 
           type="success" 
+          size="small"
           @click="handleConfirm(row)" 
           v-if="row.status === 'PENDING'">
           确认
@@ -43,6 +45,7 @@
         <el-button 
           link 
           type="danger" 
+          size="small"
           @click="handleCancel(row)" 
           v-if="row.status === 'PENDING' || row.status === 'CONFIRMED'">
           取消
@@ -256,16 +259,16 @@ import { getPortList } from '@/api/port'
 
 // 表格列配置
 const columns = [
-  { prop: 'orderNumber', label: '订单编号', width: 180 },
-  { prop: 'customerName', label: '客户名称', width: 150, slot: 'customerName' },
-  { prop: 'cargoName', label: '货物名称', width: 150 },
-  { prop: 'cargoType', label: '货物类型', width: 120 },
-  { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, align: 'right' },
-  { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'departureDate', label: '预计发货', width: 150, slot: 'departureDate' },
-  { prop: 'totalPrice', label: '运费', width: 100, align: 'right' },
-  { prop: 'createdAt', label: '创建时间', width: 160 },
-  { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
+  { prop: 'orderNumber', label: '订单编号', width: 180, minWidth: 160 },
+  { prop: 'customerName', label: '客户名称', width: 150, minWidth: 120, slot: 'customerName' },
+  { prop: 'cargoName', label: '货物名称', width: 150, minWidth: 120 },
+  { prop: 'cargoType', label: '货物类型', width: 120, minWidth: 100 },
+  { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, minWidth: 100, align: 'right' },
+  { prop: 'status', label: '状态', width: 100, minWidth: 80, slot: 'status' },
+  { prop: 'departureDate', label: '预计发货', width: 150, minWidth: 120, slot: 'departureDate' },
+  { prop: 'totalPrice', label: '运费', width: 100, minWidth: 80, align: 'right' },
+  { prop: 'createdAt', label: '创建时间', width: 160, minWidth: 140 },
+  { prop: 'extraActions', label: '操作', width: 200, minWidth: 160, slot: 'extraActions', fixed: 'right' }
 ]
 
 // 搜索配置
@@ -489,12 +492,6 @@ const handleEdit = (row) => {
   dialogVisible.value = true
 }
 
-// 查看详情
-const handleView = (row) => {
-  // TODO: 实现查看详情功能
-  ElMessage.info('查看功能待实现')
-}
-
 // 确认订单
 const handleConfirm = (row) => {
   ElMessageBox.confirm(
@@ -621,5 +618,21 @@ onMounted(() => {
 <style scoped>
 .order-list {
   height: 100%;
+  width: 100%;
+}
+
+/* 确保DataTable组件在容器中正确显示 */
+:deep(.data-table) {
+  height: 100%;
+}
+
+/* 优化表格内按钮的间距 */
+:deep(.el-button + .el-button) {
+  margin-left: 8px;
+}
+
+/* 确保固定列的阴影效果 */
+:deep(.el-table__fixed-right) {
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 </style> 
