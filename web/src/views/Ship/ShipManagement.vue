@@ -119,10 +119,10 @@
           <el-col :span="12">
             <el-form-item label="船舶状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择船舶状态" style="width: 100%">
-                <el-option label="停泊" value="0" />
-                <el-option label="航行中" value="1" />
-                <el-option label="锚泊" value="2" />
-                <el-option label="维修" value="3" />
+                <el-option label="停泊" :value="0" />
+                <el-option label="航行中" :value="1" />
+                <el-option label="锚泊" :value="2" />
+                <el-option label="维修" :value="3" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -184,10 +184,10 @@ const searchConfig = [
     type: 'select',
     placeholder: '请选择状态',
     options: [
-      { label: '停泊', value: '0' },
-      { label: '航行中', value: '1' },
-      { label: '锚泊', value: '2' },
-      { label: '维修', value: '3' }
+      { label: '停泊', value: 0 },
+      { label: '航行中', value: 1 },
+      { label: '锚泊', value: 2 },
+      { label: '维修', value: 3 }
     ]
   }
 ]
@@ -209,7 +209,7 @@ const form = reactive({
   imoNumber: '',
   grossTonnage: null,
   deadweightTonnage: null,
-  status: '0'
+  status: 0
 })
 
 // 表单验证规则
@@ -250,20 +250,20 @@ const rules = {
 // 状态相关方法
 const getStatusType = (status) => {
   const statusMap = {
-    '0': 'info',    // 停泊
-    '1': 'success', // 航行中
-    '2': 'warning', // 锚泊
-    '3': 'danger'   // 维修
+    0: 'info',    // 停泊
+    1: 'success', // 航行中
+    2: 'warning', // 锚泊
+    3: 'danger'   // 维修
   }
   return statusMap[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const statusMap = {
-    '0': '停泊',
-    '1': '航行中',
-    '2': '锚泊',
-    '3': '维修'
+    0: '停泊',
+    1: '航行中',
+    2: '锚泊',
+    3: '维修'
   }
   return statusMap[status] || '未知'
 }
@@ -304,9 +304,12 @@ const handleEdit = (row) => {
   Object.keys(form).forEach(key => {
     form[key] = row[key]
   })
-  form.status = String(row.status) // 确保状态值为字符串
+  form.status = parseInt(row.status) // 确保状态值为数字
   dialogVisible.value = true
 }
+
+// 数据表格引用
+const dataTableRef = ref()
 
 // 提交表单
 const handleSubmit = async () => {
@@ -314,7 +317,16 @@ const handleSubmit = async () => {
     await formRef.value?.validate()
     
     const formData = { ...form }
-    formData.status = parseInt(formData.status) // 转换为数字
+    
+    // 确保status字段正确转换为数字
+    if (formData.status === null || formData.status === undefined || formData.status === '') {
+      formData.status = 0 // 默认为停泊状态
+    } else {
+      formData.status = parseInt(formData.status)
+    }
+    
+    // 调试日志
+    console.log('提交的表单数据:', formData)
     
     if (isEdit.value) {
       await updateShip(formData.id, formData)
@@ -326,11 +338,10 @@ const handleSubmit = async () => {
     
     dialogVisible.value = false
     // 刷新表格数据
-    const dataTableRef = ref()
     dataTableRef.value?.loadData()
   } catch (error) {
     console.error('提交失败:', error)
-    ElMessage.error('操作失败')
+    ElMessage.error('操作失败: ' + (error.response?.data?.msg || error.message))
   }
 }
 
@@ -338,14 +349,17 @@ const handleSubmit = async () => {
 const resetForm = () => {
   Object.keys(form).forEach(key => {
     if (key === 'status') {
-      form[key] = '0'
+      form[key] = 0 // 默认为停泊状态
     } else if (key === 'grossTonnage' || key === 'deadweightTonnage') {
+      form[key] = null
+    } else if (key === 'id') {
       form[key] = null
     } else {
       form[key] = ''
     }
   })
   formRef.value?.clearValidate()
+  console.log('表单重置后:', form)
 }
 </script>
 

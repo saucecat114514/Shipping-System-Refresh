@@ -41,6 +41,15 @@
         </association>
     </resultMap>
 
+    <!-- 包含完整关联信息的结果映射（用于客户订单查询） -->
+    <resultMap id="OrderWithFullDetailsResultMap" type="com.shipping.model.entity.Order" extends="OrderWithDetailsResultMap">
+        <!-- 额外的字段映射 -->
+        <result column="ship_name" property="shipName"/>
+        <result column="origin_port_name" property="originPortName"/>
+        <result column="destination_port_name" property="destinationPortName"/>
+        <result column="route_name" property="routeName"/>
+    </resultMap>
+
     <!-- 插入订单 -->
     <insert id="insert" parameterType="com.shipping.model.entity.Order" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO orders (
@@ -255,14 +264,28 @@
         SELECT COUNT(*) FROM orders WHERE status = #{status}
     </select>
 
-    <!-- 获取客户的订单列表 -->
-    <select id="selectCustomerOrders" resultMap="OrderResultMap">
-        SELECT * FROM orders 
-        WHERE customer_id = #{customerId}
+    <!-- 获取客户的订单列表（包含关联信息） -->
+    <select id="selectCustomerOrders" resultMap="OrderWithFullDetailsResultMap">
+        SELECT 
+            o.*,
+            u.username as customer_username, u.email as customer_email, u.role as customer_role, u.real_name as customer_real_name,
+            v.voyage_number, v.departure_date, v.arrival_date, v.status as voyage_status,
+            s.name as ship_name, s.imo_number,
+            r.name as route_name, r.origin_port_id, r.destination_port_id,
+            op.name_cn as origin_port_name, op.code as origin_port_code,
+            dp.name_cn as destination_port_name, dp.code as destination_port_code
+        FROM orders o
+        LEFT JOIN users u ON o.customer_id = u.id
+        LEFT JOIN voyages v ON o.voyage_id = v.id
+        LEFT JOIN ships s ON v.ship_id = s.id
+        LEFT JOIN routes r ON v.route_id = r.id
+        LEFT JOIN ports op ON r.origin_port_id = op.id
+        LEFT JOIN ports dp ON r.destination_port_id = dp.id
+        WHERE o.customer_id = #{customerId}
         <if test="status != null and status != ''">
-            AND status = #{status}
+            AND o.status = #{status}
         </if>
-        ORDER BY created_at DESC
+        ORDER BY o.created_at DESC
     </select>
 
 </mapper> 

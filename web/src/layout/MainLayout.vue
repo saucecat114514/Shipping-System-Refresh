@@ -105,7 +105,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, ArrowDown, SwitchButton, InfoFilled } from '@element-plus/icons-vue'
 
-import { menuItems } from '../config/menu'
+import { menuItems, getMenuByRole } from '../config/menu'
 import { PermissionManager } from '../utils/permission'
 import { USER_ROLES, USER_ROLE_LABELS } from '../utils/constants'
 
@@ -123,18 +123,21 @@ const userInfo = ref({
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
 
-// 根据用户角色过滤菜单
+// 根据用户角色获取并过滤菜单
 const filteredMenuItems = computed(() => {
   console.log('=== 菜单过滤调试 ===')
   console.log('用户角色:', userInfo.value.role)
-  console.log('原始菜单数量:', menuItems.length)
   
   if (!userInfo.value.role) {
     console.log('用户角色为空，返回空菜单')
     return []
   }
   
-  const filtered = PermissionManager.filterMenuByRole(menuItems, userInfo.value.role)
+  // 根据角色获取对应的菜单
+  const roleMenuItems = getMenuByRole(userInfo.value.role)
+  console.log('角色菜单数量:', roleMenuItems.length)
+  
+  const filtered = PermissionManager.filterMenuByRole(roleMenuItems, userInfo.value.role)
   console.log('过滤后菜单数量:', filtered.length)
   console.log('过滤后菜单:', filtered.map(item => ({ title: item.title, path: item.path })))
   
@@ -163,6 +166,7 @@ const roleTagType = computed(() => {
 // 面包屑标题
 const breadcrumbTitle = computed(() => {
   const titleMap = {
+    // 管理员页面
     '/dashboard': '数据面板',
     '/ports': '港口列表',
     '/ports/map': '港口地图',
@@ -178,7 +182,17 @@ const breadcrumbTitle = computed(() => {
     '/users': '用户管理',
     '/config': '系统配置',
     '/system-test': '系统测试',
-    '/test-connection': '连接测试'
+    '/test-connection': '连接测试',
+    // 用户端页面
+    '/customer/dashboard': '主页',
+    '/customer/ports': '港口信息',
+    '/customer/ports/map': '港口地图',
+    '/customer/ships': '船舶信息',
+    '/customer/ships/tracking': '船舶追踪',
+    '/customer/routes': '航线信息',
+    '/customer/voyages': '航次信息',
+    '/customer/orders': '我的订单',
+    '/customer/orders/create': '创建订单'
   }
   return titleMap[route.path] || ''
 })

@@ -236,7 +236,7 @@
     </select>
 
     <!-- 分页查询航次列表（包含关联信息） -->
-    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageWithDetailsResultMap">
+    <select id="selectPageListWithDetails" parameterType="com.shipping.model.dto.VoyageQueryRequest" resultMap="VoyageWithPortsResultMap">
         SELECT 
             v.id as v_id,
             v.voyage_number as v_voyage_number,
@@ -260,20 +260,26 @@
             r.estimated_duration as r_estimated_duration,
             r.status as r_status,
             
-            s.id as s_id,
-            s.name as s_name,
-            s.type_cn as s_type_cn,
-            s.type_en as s_type_en,
-            s.flag as s_flag,
-            s.mmsi as s_mmsi,
-            s.imo_number as s_imo_number,
-            s.gross_tonnage as s_gross_tonnage,
-            s.deadweight_tonnage as s_deadweight_tonnage,
-            s.status as s_status
+            op.id as op_id,
+            op.name_cn as op_name_cn,
+            op.name_en as op_name_en,
+            op.code as op_code,
+            op.country as op_country,
+            op.latitude as op_latitude,
+            op.longitude as op_longitude,
+            
+            dp.id as dp_id,
+            dp.name_cn as dp_name_cn,
+            dp.name_en as dp_name_en,
+            dp.code as dp_code,
+            dp.country as dp_country,
+            dp.latitude as dp_latitude,
+            dp.longitude as dp_longitude
             
         FROM voyages v
         LEFT JOIN routes r ON v.route_id = r.id
-        LEFT JOIN ships s ON v.ship_id = s.id
+        LEFT JOIN ports op ON r.origin_port_id = op.id
+        LEFT JOIN ports dp ON r.destination_port_id = dp.id
         <where>
             <if test="voyageNumber != null and voyageNumber != ''">
                 AND v.voyage_number LIKE CONCAT('%', #{voyageNumber}, '%')

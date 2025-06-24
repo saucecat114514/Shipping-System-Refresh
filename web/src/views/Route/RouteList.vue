@@ -16,7 +16,7 @@
       
       <template #status="{ row }">
         <el-tag :type="getStatusType(row.status)">
-          {{ row.status }}
+          {{ row.status === 1 ? '启用' : '停用' }}
         </el-tag>
       </template>
     </DataTable>
@@ -36,8 +36,8 @@
       >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="航线编号" prop="code">
-              <el-input v-model="form.code" placeholder="请输入航线编号" />
+            <el-form-item label="航线编号" prop="routeNumber">
+              <el-input v-model="form.routeNumber" placeholder="系统自动生成" readonly />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -49,36 +49,82 @@
         
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="起始港口" prop="startPortId">
-              <el-select v-model="form.startPortId" placeholder="请选择起始港口" style="width: 100%">
-                <el-option v-for="port in ports" :key="port.id" :label="port.name" :value="port.id" />
+            <el-form-item label="起始港口" prop="originPortId">
+              <el-select 
+                v-model="form.originPortId" 
+                placeholder="请选择起始港口" 
+                style="width: 100%"
+                @change="handlePortChange"
+              >
+                <el-option 
+                  v-for="port in ports" 
+                  :key="port.id" 
+                  :label="`${port.nameCn} (${port.code})`" 
+                  :value="port.id" 
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="目的港口" prop="endPortId">
-              <el-select v-model="form.endPortId" placeholder="请选择目的港口" style="width: 100%">
-                <el-option v-for="port in ports" :key="port.id" :label="port.name" :value="port.id" />
+            <el-form-item label="目的港口" prop="destinationPortId">
+              <el-select 
+                v-model="form.destinationPortId" 
+                placeholder="请选择目的港口" 
+                style="width: 100%"
+                @change="handlePortChange"
+              >
+                <el-option 
+                  v-for="port in ports" 
+                  :key="port.id" 
+                  :label="`${port.nameCn} (${port.code})`" 
+                  :value="port.id" 
+                />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="航程(海里)" prop="distance">
-              <el-input-number
+          <el-col :span="8">
+            <el-form-item label="航程(公里)" prop="distance">
+              <el-input
                 v-model="form.distance"
-                :min="0"
-                :step="100"
-                style="width: 100%"
-                placeholder="航程"
+                placeholder="系统自动计算"
+                readonly
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="预计时间" prop="estimatedDuration">
-              <el-input v-model="form.estimatedDuration" placeholder="如: 5天" />
+          <el-col :span="8">
+            <el-form-item label="航程(海里)" prop="distanceNm">
+              <el-input
+                v-model="form.distanceNm"
+                placeholder="系统自动计算"
+                readonly
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="预计时间(小时)" prop="estimatedDuration">
+              <el-input
+                v-model="form.estimatedDuration"
+                placeholder="系统自动计算"
+                readonly
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item>
+              <el-button 
+                type="primary" 
+                @click="calculateDistance"
+                :disabled="!form.originPortId || !form.destinationPortId"
+                style="width: 100%"
+              >
+                {{ form.distance ? '重新计算距离和时间' : '计算距离和时间' }}
+              </el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -87,9 +133,8 @@
           <el-col :span="12">
             <el-form-item label="状态" prop="status">
               <el-select v-model="form.status" placeholder="请选择状态" style="width: 100%">
-                <el-option label="正常" value="ACTIVE" />
-                <el-option label="维护中" value="MAINTENANCE" />
-                <el-option label="已停用" value="INACTIVE" />
+                <el-option label="启用" :value="1" />
+                <el-option label="停用" :value="0" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -131,16 +176,17 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import DataTable from '@/components/DataTable.vue'
 import { getRouteList, createRoute, updateRoute, deleteRoute } from '@/api/route'
-import { getPortList } from '@/api/port'
+import { getAllPorts } from '@/api/port'
+import request from '@/utils/request'
 
 // 表格列配置
 const columns = [
   { prop: 'routeNumber', label: '航线编号', width: 120 },
   { prop: 'name', label: '航线名称', width: 180 },
   { prop: 'route', label: '航线', width: 250, slot: 'route' },
-  { prop: 'distanceNm', label: '航程(海里)', width: 120, align: 'right' },
-  { prop: 'estimatedDuration', label: '预计时间', width: 120 },
   { prop: 'distance', label: '航程(公里)', width: 130, align: 'right' },
+  { prop: 'distanceNm', label: '航程(海里)', width: 120, align: 'right' },
+  { prop: 'estimatedDuration', label: '预计时间(小时)', width: 120, align: 'right' },
   { prop: 'status', label: '状态', width: 100, slot: 'status' },
   { prop: 'createdAt', label: '创建时间', width: 160 }
 ]
@@ -165,9 +211,8 @@ const searchConfig = [
     type: 'select',
     placeholder: '请选择状态',
     options: [
-      { label: '正常', value: 'ACTIVE' },
-      { label: '维护中', value: 'MAINTENANCE' },
-      { label: '已停用', value: 'INACTIVE' }
+      { label: '启用', value: 1 },
+      { label: '停用', value: 0 }
     ]
   }
 ]
@@ -185,36 +230,27 @@ const ports = ref([])
 // 表单数据
 const form = reactive({
   id: null,
-  code: '',
+  routeNumber: '',
   name: '',
-  startPortId: null,
-  endPortId: null,
+  originPortId: null,
+  destinationPortId: null,
   distance: null,
-  estimatedDuration: '',
-  maxCapacity: null,
-  status: 'ACTIVE',
+  distanceNm: null,
+  estimatedDuration: null,
+  status: 1,
   description: ''
 })
 
 // 表单验证规则
 const rules = {
-  code: [
-    { required: true, message: '请输入航线编号', trigger: 'blur' }
-  ],
   name: [
     { required: true, message: '请输入航线名称', trigger: 'blur' }
   ],
-  startPortId: [
+  originPortId: [
     { required: true, message: '请选择起始港口', trigger: 'change' }
   ],
-  endPortId: [
+  destinationPortId: [
     { required: true, message: '请选择目的港口', trigger: 'change' }
-  ],
-  distance: [
-    { required: true, message: '请输入航程', trigger: 'blur' }
-  ],
-  estimatedDuration: [
-    { required: true, message: '请输入预计时间', trigger: 'blur' }
   ],
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
@@ -224,9 +260,8 @@ const rules = {
 // 状态处理函数
 const getStatusType = (status) => {
   const typeMap = {
-    'ACTIVE': 'success',
-    'MAINTENANCE': 'warning',
-    'INACTIVE': 'danger'
+    1: 'success',
+    0: 'danger'
   }
   return typeMap[status] || 'info'
 }
@@ -234,11 +269,23 @@ const getStatusType = (status) => {
 // 数据加载函数
 const loadRouteData = async (params) => {
   try {
-    const result = await getRouteList(params)
+    // 使用包含港口信息的接口
+    const result = await request({
+      url: '/routes/with-ports',
+      method: 'get',
+      params
+    })
     return result
   } catch (error) {
     console.error('加载航线数据失败:', error)
-    throw error
+    // 如果新接口失败，尝试使用原有接口
+    try {
+      const fallbackResult = await getRouteList(params)
+      return fallbackResult
+    } catch (fallbackError) {
+      console.error('备用接口也失败:', fallbackError)
+      throw error
+    }
   }
 }
 
@@ -255,25 +302,57 @@ const deleteRouteData = async (id) => {
 // 加载港口列表
 const loadPorts = async () => {
   try {
-    const result = await getPortList({ page: 1, size: 1000 })
+    const result = await getAllPorts()
     ports.value = result.data || []
+    console.log('港口列表加载成功:', ports.value.length)
   } catch (error) {
     console.error('加载港口列表失败:', error)
+    // 如果新接口失败，尝试使用原有的港口接口
+    try {
+      const fallbackResult = await getPortList({ page: 1, size: 1000 })
+      ports.value = fallbackResult.data || []
+      console.log('备用港口列表加载成功:', ports.value.length)
+    } catch (fallbackError) {
+      console.error('备用港口接口也失败:', fallbackError)
+      ElMessage.error('加载港口列表失败，请检查网络连接')
+    }
   }
 }
 
 // 新增
-const handleAdd = () => {
+const handleAdd = async () => {
   dialogTitle.value = '新增航线'
   isEdit.value = false
+  resetForm()
+  
+  // 打开对话框前重新加载港口列表
+  await loadPorts()
+  
   dialogVisible.value = true
+  
+  // 添加调试信息
+  console.log('新增对话框打开，当前港口数量:', ports.value.length)
+  if (ports.value.length > 0) {
+    console.log('第一个港口:', ports.value[0])
+  }
 }
 
 // 编辑
 const handleEdit = (row) => {
   dialogTitle.value = '编辑航线'
   isEdit.value = true
-  Object.assign(form, row)
+  Object.assign(form, {
+    id: row.id,
+    routeNumber: row.routeNumber,
+    name: row.name,
+    originPortId: row.originPortId,
+    destinationPortId: row.destinationPortId,
+    distance: row.distance,
+    distanceNm: row.distanceNm,
+    estimatedDuration: row.estimatedDuration,
+    status: row.status,
+    description: row.description
+  })
   dialogVisible.value = true
 }
 
@@ -282,11 +361,27 @@ const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        const submitData = {
+          name: form.name,
+          originPortId: form.originPortId,
+          destinationPortId: form.destinationPortId,
+          distance: form.distance,
+          distanceNm: form.distanceNm,
+          estimatedDuration: form.estimatedDuration,
+          status: form.status,
+          description: form.description
+        }
+        
+        // 编辑时包含航线编号
         if (isEdit.value) {
-          await updateRoute(form.id, form)
+          submitData.routeNumber = form.routeNumber
+        }
+
+        if (isEdit.value) {
+          await updateRoute(form.id, submitData)
           ElMessage.success('更新成功')
         } else {
-          await createRoute(form)
+          await createRoute(submitData)
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
@@ -308,14 +403,14 @@ const resetForm = () => {
   }
   Object.assign(form, {
     id: null,
-    code: '',
+    routeNumber: '',
     name: '',
-    startPortId: null,
-    endPortId: null,
+    originPortId: null,
+    destinationPortId: null,
     distance: null,
-    estimatedDuration: '',
-    maxCapacity: null,
-    status: 'ACTIVE',
+    distanceNm: null,
+    estimatedDuration: null,
+    status: 1,
     description: ''
   })
 }
@@ -324,6 +419,90 @@ const resetForm = () => {
 onMounted(() => {
   loadPorts()
 })
+
+// 处理港口变化
+const handlePortChange = () => {
+  // 当两个港口都选择后，自动计算距离
+  if (form.originPortId && form.destinationPortId && form.originPortId !== form.destinationPortId) {
+    // 延迟执行，确保界面更新后再计算
+    setTimeout(() => {
+      calculateDistance()
+    }, 100)
+  } else if (form.originPortId === form.destinationPortId && form.originPortId) {
+    ElMessage.warning('起始港口和目的港口不能相同')
+    form.distance = null
+    form.distanceNm = null
+    form.estimatedDuration = null
+  } else {
+    // 清空计算结果
+    form.distance = null
+    form.distanceNm = null
+    form.estimatedDuration = null
+  }
+}
+
+// 计算距离
+const calculateDistance = async () => {
+  if (!form.originPortId || !form.destinationPortId) {
+    ElMessage.warning('请先选择起始港口和目的港口')
+    return
+  }
+  
+  if (form.originPortId === form.destinationPortId) {
+    ElMessage.warning('起始港口和目的港口不能相同')
+    return
+  }
+  
+  try {
+    // 获取两个港口的坐标信息
+    const originPort = ports.value.find(p => p.id === form.originPortId)
+    const destinationPort = ports.value.find(p => p.id === form.destinationPortId)
+    
+    if (!originPort || !destinationPort) {
+      ElMessage.error('无法获取港口坐标信息')
+      return
+    }
+    
+    // 使用Haversine公式计算距离
+    const distance = calculateHaversineDistance(
+      originPort.latitude, originPort.longitude,
+      destinationPort.latitude, destinationPort.longitude
+    )
+    
+    // 转换为海里 (1公里 = 0.539957海里)
+    const distanceNm = distance * 0.539957
+    
+    // 计算预计航行时间 (假设平均速度为12节)
+    const estimatedHours = distanceNm / 12
+    
+    // 更新表单数据
+    form.distance = Math.round(distance * 100) / 100  // 保留两位小数
+    form.distanceNm = Math.round(distanceNm * 100) / 100  // 保留两位小数
+    form.estimatedDuration = Math.round(estimatedHours * 100) / 100  // 保留两位小数
+    
+    ElMessage.success(`距离计算完成：${form.distance} 公里 (${form.distanceNm} 海里)，预计时间：${form.estimatedDuration} 小时`)
+  } catch (error) {
+    console.error('计算距离失败:', error)
+    ElMessage.error('计算距离失败')
+  }
+}
+
+// Haversine距离计算公式
+const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371 // 地球半径，单位：公里
+  const dLat = toRadians(lat2 - lat1)
+  const dLon = toRadians(lon2 - lon1)
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// 角度转弧度
+const toRadians = (degrees) => {
+  return degrees * (Math.PI / 180)
+}
 </script>
 
 <style scoped>

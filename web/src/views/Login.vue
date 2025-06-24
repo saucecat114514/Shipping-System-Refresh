@@ -28,6 +28,7 @@ import { reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { login } from '@/api/auth';
+import { USER_ROLES } from '@/utils/constants';
 
 const router = useRouter();
 const loginFormRef = ref();
@@ -55,10 +56,19 @@ const handleLogin = () => {
         });
         
         const token = response.data.token;
+        const userRole = response.data.role;
+        
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(response.data));
+        
         ElMessage.success('登录成功');
-        router.push('/dashboard');
+        
+        // 根据用户角色跳转到不同的主页
+        if (userRole === USER_ROLES.CUSTOMER) {
+          router.push('/customer/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
       } catch (error) {
         ElMessage.error('用户名或密码错误');
       }

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>船舶创建功能最终测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .status { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>船舶创建功能最终测试</h1>
+        
+        <div class="test-section info">
+            <h3>测试说明</h3>
+            <p>这个测试将验证船舶创建功能是否正常工作，特别是状态字段的处理。</p>
+            <p><strong>预期结果：</strong>所有测试都应该成功，状态字段应该正确传递为数字类型。</p>
+        </div>
+
+        <div class="test-section">
+            <h3>测试步骤</h3>
+            <button onclick="runAllTests()">运行所有测试</button>
+            <button onclick="clearResults()">清除结果</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let token = '';
+        
+        async function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<div class="status">[${new Date().toLocaleTimeString()}] ${message}</div>`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        async function logObject(title, obj, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `
+                <div class="status">[${new Date().toLocaleTimeString()}] ${title}</div>
+                <pre>${JSON.stringify(obj, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+            console.log(title, obj);
+        }
+
+        async function login() {
+            try {
+                const response = await fetch('http://localhost:8080/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin123'
+                    })
+                });
+
+                const data = await response.json();
+                if (data.code === 200) {
+                    token = data.data.token;
+                    await log('✓ 登录成功', 'success');
+                    return true;
+                } else {
+                    await log(`✗ 登录失败: ${data.msg}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                await log(`✗ 登录异常: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testCreateShip() {
+            const randomId = Math.floor(Math.random() * 10000);
+            const shipData = {
+                name: `最终测试船舶_${randomId}`,
+                typeCn: '集装箱船',
+                typeEn: 'Container Ship',
+                flag: '中国',
+                mmsi: `41399${randomId.toString().padStart(4, '0')}`,
+                imoNumber: `IMO999${randomId.toString().padStart(4, '0')}`,
+                grossTonnage: 12000,
+                deadweightTonnage: 18000,
+                status: 0  // 重点测试：确保这是数字类型
+            };
+
+            await logObject('发送的船舶数据', shipData, 'info');
+
+            try {
+                const response = await fetch('http://localhost:8080/api/ships', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(shipData)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    await log(`✓ 船舶创建成功！船舶ID: ${data.data.id}`, 'success');
+                    await logObject('返回的船舶数据', data.data, 'success');
+                    return data.data.id;
+                } else {
+                    await log(`✗ 船舶创建失败: ${data.msg || '未知错误'}`, 'error');
+                    await logObject('错误响应', data, 'error');
+                    return null;
+                }
+            } catch (error) {
+                await log(`✗ 创建船舶异常: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testStatusValues() {
+            await log('测试不同状态值的船舶创建...', 'info');
+            
+            const statusTests = [
+                { status: 0, name: '停泊状态船舶' },
+                { status: 1, name: '航行状态船舶' },
+                { status: 2, name: '锚泊状态船舶' },
+                { status: 3, name: '维修状态船舶' }
+            ];
+
+            for (const test of statusTests) {
+                const randomId = Math.floor(Math.random() * 10000);
+                const shipData = {
+                    name: `${test.name}_${randomId}`,
+                    typeCn: '集装箱船',
+                    typeEn: 'Container Ship',
+                    flag: '中国',
+                    mmsi: `41399${randomId.toString().padStart(4, '0')}`,
+                    imoNumber: `IMO999${randomId.toString().padStart(4, '0')}`,
+                    grossTonnage: 10000,
+                    deadweightTonnage: 15000,
+                    status: test.status
+                };
+
+                try {
+                    const response = await fetch('http://localhost:8080/api/ships', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(shipData)
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok && data.code === 200) {
+                        await log(`✓ 状态${test.status}测试成功 - ${test.name}`, 'success');
+                    } else {
+                        await log(`✗ 状态${test.status}测试失败: ${data.msg}`, 'error');
+                    }
+                } catch (error) {
+                    await log(`✗ 状态${test.status}测试异常: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function testDeleteShip(shipId) {
+            if (!shipId) return;
+            
+            try {
+                const response = await fetch(`http://localhost:8080/api/ships/${shipId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.code === 200) {
+                    await log(`✓ 测试船舶删除成功 (ID: ${shipId})`, 'success');
+                } else {
+                    await log(`✗ 删除船舶失败: ${data.msg}`, 'error');
+                }
+            } catch (error) {
+                await log(`✗ 删除船舶异常: ${error.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            await log('开始运行船舶创建功能完整测试...', 'info');
+            
+            // 1. 登录测试
+            const loginSuccess = await login();
+            if (!loginSuccess) {
+                await log('登录失败，终止测试', 'error');
+                return;
+            }
+
+            // 2. 基本创建测试
+            const shipId = await testCreateShip();
+
+            // 3. 状态值测试
+            await testStatusValues();
+
+            // 4. 清理测试数据
+            if (shipId) {
+                await testDeleteShip(shipId);
+            }
+
+            await log('所有测试完成！', 'success');
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // 页面加载完成后显示说明
+        window.onload = function() {
+            log('页面加载完成，点击"运行所有测试"开始测试', 'info');
+        };
+    </script>
+</body>
+</html> 

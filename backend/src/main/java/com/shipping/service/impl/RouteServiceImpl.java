@@ -6,15 +6,19 @@ import com.shipping.exception.BusinessException;
 import com.shipping.mapper.PortMapper;
 import com.shipping.mapper.RouteMapper;
 import com.shipping.model.entity.Route;
+import com.shipping.model.entity.Port;
 import com.shipping.model.dto.RouteRequest;
 import com.shipping.model.dto.RouteQueryRequest;
 import com.shipping.service.RouteService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -31,18 +35,15 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     public Result<Route> createRoute(RouteRequest routeRequest) {
-        // 检查航线编号是否已存在
-        if (routeMapper.existsByRouteNumber(routeRequest.getRouteNumber(), null)) {
-            throw new BusinessException("航线编号已存在：" + routeRequest.getRouteNumber());
-        }
-
         // 检查起始港口是否存在
-        if (portMapper.selectById(routeRequest.getOriginPortId()) == null) {
+        Port originPort = portMapper.selectById(routeRequest.getOriginPortId());
+        if (originPort == null) {
             throw new BusinessException("起始港口不存在，ID：" + routeRequest.getOriginPortId());
         }
 
         // 检查目的港口是否存在
-        if (portMapper.selectById(routeRequest.getDestinationPortId()) == null) {
+        Port destinationPort = portMapper.selectById(routeRequest.getDestinationPortId());
+        if (destinationPort == null) {
             throw new BusinessException("目的港口不存在，ID：" + routeRequest.getDestinationPortId());
         }
 
@@ -51,15 +52,39 @@ public class RouteServiceImpl implements RouteService {
             throw new BusinessException("起始港口和目的港口不能相同");
         }
 
+        // 自动生成航线编号（如果未提供）
+        String routeNumber = routeRequest.getRouteNumber();
+        if (!StringUtils.hasText(routeNumber)) {
+            routeNumber = generateRouteNumber(originPort, destinationPort);
+        }
+
+        // 检查航线编号是否已存在
+        if (routeMapper.existsByRouteNumber(routeNumber, null)) {
+            throw new BusinessException("航线编号已存在：" + routeNumber);
+        }
+
+        // 自动计算距离（如果未提供）
+        BigDecimal distance = routeRequest.getDistance();
+        if (distance == null) {
+            distance = calculateDistance(originPort, destinationPort);
+        }
+
+        // 自动计算预计航行时间（如果未提供）
+        BigDecimal estimatedDuration = routeRequest.getEstimatedDuration();
+        if (estimatedDuration == null) {
+            estimatedDuration = calculateEstimatedDuration(distance);
+        }
+
         // 创建航线实体
         Route route = new Route();
         BeanUtils.copyProperties(routeRequest, route);
+        route.setRouteNumber(routeNumber);
+        route.setDistance(distance);
+        route.setEstimatedDuration(estimatedDuration);
         
         // 计算海里距离（1公里 = 0.539957海里）
-        if (routeRequest.getDistance() != null) {
-            BigDecimal distanceNm = routeRequest.getDistance().multiply(new BigDecimal("0.539957"));
-            route.setDistanceNm(distanceNm.setScale(2, BigDecimal.ROUND_HALF_UP));
-        }
+        BigDecimal distanceNm = distance.multiply(new BigDecimal("0.539957"));
+        route.setDistanceNm(distanceNm.setScale(2, RoundingMode.HALF_UP));
         
         route.setCreatedAt(LocalDateTime.now());
         route.setUpdatedAt(LocalDateTime.now());
@@ -71,6 +96,61 @@ public class RouteServiceImpl implements RouteService {
         } else {
             throw new BusinessException("创建航线失败");
         }
+    }
+
+    /**
+     * 自动生成航线编号
+     */
+    private String generateRouteNumber(Port originPort, Port destinationPort) {
+        // 使用港口代码生成航线编号，格式：R + 起始港口代码前3位 + 目的港口代码前3位 + 时间戳后4位
+        String originCode = originPort.getCode();
+        String destCode = destinationPort.getCode();
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("MMddHHmm"));
+        
+        // 确保港口代码长度
+        String originPrefix = originCode.length() >= 3 ? originCode.substring(0, 3) : originCode;
+        String destPrefix = destCode.length() >= 3 ? destCode.substring(0, 3) : destCode;
+        
+        return String.format("R%s%s%s", originPrefix, destPrefix, timestamp);
+    }
+
+    /**
+     * 计算两港口间的距离（使用Haversine公式）
+     */
+    private BigDecimal calculateDistance(Port originPort, Port destinationPort) {
+        if (originPort.getLatitude() == null || originPort.getLongitude() == null ||
+            destinationPort.getLatitude() == null || destinationPort.getLongitude() == null) {
+            // 如果港口坐标不完整，返回默认距离
+            return new BigDecimal("1000.00");
+        }
+
+        double lat1 = originPort.getLatitude().doubleValue();
+        double lon1 = originPort.getLongitude().doubleValue();
+        double lat2 = destinationPort.getLatitude().doubleValue();
+        double lon2 = destinationPort.getLongitude().doubleValue();
+
+        // 地球半径（公里）
+        final double EARTH_RADIUS = 6371.0;
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        double distance = EARTH_RADIUS * c;
+        
+        return new BigDecimal(distance).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 根据距离计算预计航行时间
+     */
+    private BigDecimal calculateEstimatedDuration(BigDecimal distance) {
+        // 假设平均航行速度为20公里/小时
+        double avgSpeed = 20.0;
+        double duration = distance.doubleValue() / avgSpeed;
+        return new BigDecimal(duration).setScale(2, RoundingMode.HALF_UP);
     }
 
     @Override
@@ -129,7 +209,7 @@ public class RouteServiceImpl implements RouteService {
         // 计算海里距离
         if (routeRequest.getDistance() != null) {
             BigDecimal distanceNm = routeRequest.getDistance().multiply(new BigDecimal("0.539957"));
-            updateRoute.setDistanceNm(distanceNm.setScale(2, BigDecimal.ROUND_HALF_UP));
+            updateRoute.setDistanceNm(distanceNm.setScale(2, RoundingMode.HALF_UP));
         }
         
         updateRoute.setCreatedAt(existingRoute.getCreatedAt());

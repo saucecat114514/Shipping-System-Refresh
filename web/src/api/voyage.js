@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 获取航次列表
 export function getVoyageList(params) {
   return request({
-    url: '/voyages',
+    url: '/voyages/with-details',
     method: 'get',
     params
   })
