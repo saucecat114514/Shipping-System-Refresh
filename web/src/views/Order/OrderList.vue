@@ -118,6 +118,19 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="货物名称" prop="cargoName">
+              <el-input v-model="form.cargoName" placeholder="请输入货物名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="货物类型" prop="cargoType">
+              <el-input v-model="form.cargoType" placeholder="如: 集装箱、散货等" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="运输方式" prop="transportMode">
               <el-select v-model="form.transportMode" placeholder="请选择运输方式" style="width: 100%">
                 <el-option label="海运" value="SEA" />
@@ -128,8 +141,12 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="货物类型" prop="cargoType">
-              <el-input v-model="form.cargoType" placeholder="如: 集装箱、散货等" />
+            <el-form-item label="优先级" prop="priority">
+              <el-select v-model="form.priority" placeholder="请选择优先级" style="width: 100%">
+                <el-option label="普通" value="NORMAL" />
+                <el-option label="紧急" value="URGENT" />
+                <el-option label="加急" value="HIGH" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -312,6 +329,7 @@ const form = reactive({
   startPortId: null,
   endPortId: null,
   transportMode: 'SEA',
+  cargoName: '',
   cargoType: '',
   cargoWeight: null,
   cargoVolume: null,
@@ -342,6 +360,9 @@ const rules = {
   ],
   transportMode: [
     { required: true, message: '请选择运输方式', trigger: 'change' }
+  ],
+  cargoName: [
+    { required: true, message: '请输入货物名称', trigger: 'blur' }
   ],
   cargoType: [
     { required: true, message: '请输入货物类型', trigger: 'blur' }
@@ -440,7 +461,31 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   dialogTitle.value = '编辑订单'
   isEdit.value = true
-  Object.assign(form, row)
+  
+  // 将后端数据映射到前端表单字段
+  Object.assign(form, {
+    id: row.id,
+    orderNo: row.orderNumber || row.orderNo || '',
+    customerName: row.customer ? row.customer.realName : (row.customerName || ''),
+    contactPerson: row.contactPerson || '',
+    contactPhone: row.contactPhone || '',
+    startPortId: row.startPortId || null,
+    endPortId: row.endPortId || null,
+    transportMode: row.transportMode || 'SEA',
+    cargoName: row.cargoName || '',
+    cargoType: row.cargoType || '',
+    cargoWeight: row.cargoWeight || null,
+    cargoVolume: row.cargoVolume || null,
+    expectedDeliveryDate: row.expectedDeliveryDate || '',
+    status: row.status || 'PENDING',
+    shippingCost: row.totalPrice || row.shippingCost || null,
+    priority: row.priority || (row.isUrgent ? 'URGENT' : 'NORMAL'),
+    specialRequirements: row.notes || row.specialRequirements || ''
+  })
+  
+  console.log('编辑订单 - 原始数据:', row)
+  console.log('编辑订单 - 映射后的表单数据:', form)
+  
   dialogVisible.value = true
 }
 
@@ -501,11 +546,31 @@ const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        // 构建符合后端API要求的数据格式
+        const requestData = {
+          orderNumber: form.orderNo,
+          cargoName: form.cargoName || form.cargoType,
+          cargoType: form.cargoType,
+          cargoWeight: form.cargoWeight,
+          cargoVolume: form.cargoVolume,
+          status: form.status,
+          isUrgent: form.priority === 'URGENT',
+          totalPrice: form.shippingCost,
+          basePrice: form.shippingCost, // 暂时设为相同
+          additionalFees: 0,
+          notes: form.specialRequirements,
+          // 如果有其他字段，可以在这里添加
+          customerId: null, // 需要根据customerName查找客户ID
+          voyageId: null    // 需要根据航线信息设置
+        }
+        
+        console.log('提交的数据:', requestData)
+        
         if (isEdit.value) {
-          await updateOrder(form.id, form)
+          await updateOrder(form.id, requestData)
           ElMessage.success('更新成功')
         } else {
-          await createOrder(form)
+          await createOrder(requestData)
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
@@ -514,6 +579,7 @@ const handleSubmit = () => {
           dataTableRef.value.refresh()
         }
       } catch (error) {
+        console.error('提交失败:', error)
         ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
       }
     }
@@ -534,6 +600,7 @@ const resetForm = () => {
     startPortId: null,
     endPortId: null,
     transportMode: 'SEA',
+    cargoName: '',
     cargoType: '',
     cargoWeight: null,
     cargoVolume: null,
