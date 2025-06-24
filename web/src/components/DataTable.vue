@@ -45,12 +45,14 @@
     </div>
 
     <!-- 表格区域 -->
-    <el-table 
-      :data="tableData" 
-      v-loading="loading"
-      stripe
-      style="width: 100%"
-    >
+    <div class="table-container">
+      <el-table 
+        :data="tableData" 
+        v-loading="loading"
+        stripe
+        style="width: 100%"
+        :scrollbar-always-on="true"
+      >
       <el-table-column
         v-for="column in columns"
         :key="column.prop"
@@ -87,7 +89,8 @@
           </PermissionButton>
         </template>
       </el-table-column>
-    </el-table>
+      </el-table>
+    </div>
 
     <!-- 分页区域 -->
     <div class="pagination" v-if="showPagination">
@@ -288,6 +291,32 @@ onMounted(() => {
   padding: 20px;
   background: #f8f9fa;
   border-radius: 6px;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
 .pagination {
