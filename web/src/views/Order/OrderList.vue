@@ -1,11 +1,12 @@
 <template>
-  <div class="order-list">
+    <div class="order-list">
     <DataTable
       ref="dataTableRef"
       :columns="columns"
       :search-config="searchConfig"
       :load-data="loadOrderData"
       :delete-data="deleteOrderData"
+      :show-actions="false"
       @add="handleAdd"
       @edit="handleEdit"
     >
@@ -24,11 +25,11 @@
         </el-tag>
       </template>
 
-      <template #actions="{ row }">
-        <el-button link type="primary" @click="handleView(row)">查看</el-button>
+      <template #extraActions="{ row }">
         <el-button 
           link 
           type="primary" 
+          size="small"
           @click="handleEdit(row)" 
           v-if="row.status === 'PENDING'">
           编辑
@@ -36,6 +37,7 @@
         <el-button 
           link 
           type="success" 
+          size="small"
           @click="handleConfirm(row)" 
           v-if="row.status === 'PENDING'">
           确认
@@ -43,6 +45,7 @@
         <el-button 
           link 
           type="danger" 
+          size="small"
           @click="handleCancel(row)" 
           v-if="row.status === 'PENDING' || row.status === 'CONFIRMED'">
           取消
@@ -118,6 +121,19 @@
 
         <el-row :gutter="20">
           <el-col :span="12">
+            <el-form-item label="货物名称" prop="cargoName">
+              <el-input v-model="form.cargoName" placeholder="请输入货物名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="货物类型" prop="cargoType">
+              <el-input v-model="form.cargoType" placeholder="如: 集装箱、散货等" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
             <el-form-item label="运输方式" prop="transportMode">
               <el-select v-model="form.transportMode" placeholder="请选择运输方式" style="width: 100%">
                 <el-option label="海运" value="SEA" />
@@ -128,8 +144,12 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="货物类型" prop="cargoType">
-              <el-input v-model="form.cargoType" placeholder="如: 集装箱、散货等" />
+            <el-form-item label="优先级" prop="priority">
+              <el-select v-model="form.priority" placeholder="请选择优先级" style="width: 100%">
+                <el-option label="普通" value="NORMAL" />
+                <el-option label="紧急" value="URGENT" />
+                <el-option label="加急" value="HIGH" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -239,16 +259,16 @@ import { getPortList } from '@/api/port'
 
 // 表格列配置
 const columns = [
-  { prop: 'orderNumber', label: '订单编号', width: 180 },
-  { prop: 'customerName', label: '客户名称', width: 150, slot: 'customerName' },
-  { prop: 'cargoName', label: '货物名称', width: 150 },
-  { prop: 'cargoType', label: '货物类型', width: 120 },
-  { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, align: 'right' },
-  { prop: 'status', label: '状态', width: 100, slot: 'status' },
-  { prop: 'departureDate', label: '预计发货', width: 150, slot: 'departureDate' },
-  { prop: 'totalPrice', label: '运费', width: 100, align: 'right' },
-  { prop: 'createdAt', label: '创建时间', width: 160 },
-  { prop: 'actions', label: '操作', width: 250, slot: 'actions', fixed: 'right' }
+  { prop: 'orderNumber', label: '订单编号', width: 180, minWidth: 160 },
+  { prop: 'customerName', label: '客户名称', width: 150, minWidth: 120, slot: 'customerName' },
+  { prop: 'cargoName', label: '货物名称', width: 150, minWidth: 120 },
+  { prop: 'cargoType', label: '货物类型', width: 120, minWidth: 100 },
+  { prop: 'cargoWeight', label: '货物重量(吨)', width: 120, minWidth: 100, align: 'right' },
+  { prop: 'status', label: '状态', width: 100, minWidth: 80, slot: 'status' },
+  { prop: 'departureDate', label: '预计发货', width: 150, minWidth: 120, slot: 'departureDate' },
+  { prop: 'totalPrice', label: '运费', width: 100, minWidth: 80, align: 'right' },
+  { prop: 'createdAt', label: '创建时间', width: 160, minWidth: 140 },
+  { prop: 'extraActions', label: '操作', width: 200, minWidth: 160, slot: 'extraActions', fixed: 'right' }
 ]
 
 // 搜索配置
@@ -312,6 +332,7 @@ const form = reactive({
   startPortId: null,
   endPortId: null,
   transportMode: 'SEA',
+  cargoName: '',
   cargoType: '',
   cargoWeight: null,
   cargoVolume: null,
@@ -342,6 +363,9 @@ const rules = {
   ],
   transportMode: [
     { required: true, message: '请选择运输方式', trigger: 'change' }
+  ],
+  cargoName: [
+    { required: true, message: '请输入货物名称', trigger: 'blur' }
   ],
   cargoType: [
     { required: true, message: '请输入货物类型', trigger: 'blur' }
@@ -440,14 +464,32 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   dialogTitle.value = '编辑订单'
   isEdit.value = true
-  Object.assign(form, row)
+  
+  // 将后端数据映射到前端表单字段
+  Object.assign(form, {
+    id: row.id,
+    orderNo: row.orderNumber || row.orderNo || '',
+    customerName: row.customer ? row.customer.realName : (row.customerName || ''),
+    contactPerson: row.contactPerson || '',
+    contactPhone: row.contactPhone || '',
+    startPortId: row.startPortId || null,
+    endPortId: row.endPortId || null,
+    transportMode: row.transportMode || 'SEA',
+    cargoName: row.cargoName || '',
+    cargoType: row.cargoType || '',
+    cargoWeight: row.cargoWeight || null,
+    cargoVolume: row.cargoVolume || null,
+    expectedDeliveryDate: row.expectedDeliveryDate || '',
+    status: row.status || 'PENDING',
+    shippingCost: row.totalPrice || row.shippingCost || null,
+    priority: row.priority || (row.isUrgent ? 'URGENT' : 'NORMAL'),
+    specialRequirements: row.notes || row.specialRequirements || ''
+  })
+  
+  console.log('编辑订单 - 原始数据:', row)
+  console.log('编辑订单 - 映射后的表单数据:', form)
+  
   dialogVisible.value = true
-}
-
-// 查看详情
-const handleView = (row) => {
-  // TODO: 实现查看详情功能
-  ElMessage.info('查看功能待实现')
 }
 
 // 确认订单
@@ -501,11 +543,31 @@ const handleSubmit = () => {
   formRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        // 构建符合后端API要求的数据格式
+        const requestData = {
+          orderNumber: form.orderNo,
+          cargoName: form.cargoName || form.cargoType,
+          cargoType: form.cargoType,
+          cargoWeight: form.cargoWeight,
+          cargoVolume: form.cargoVolume,
+          status: form.status,
+          isUrgent: form.priority === 'URGENT',
+          totalPrice: form.shippingCost,
+          basePrice: form.shippingCost, // 暂时设为相同
+          additionalFees: 0,
+          notes: form.specialRequirements,
+          // 如果有其他字段，可以在这里添加
+          customerId: null, // 需要根据customerName查找客户ID
+          voyageId: null    // 需要根据航线信息设置
+        }
+        
+        console.log('提交的数据:', requestData)
+        
         if (isEdit.value) {
-          await updateOrder(form.id, form)
+          await updateOrder(form.id, requestData)
           ElMessage.success('更新成功')
         } else {
-          await createOrder(form)
+          await createOrder(requestData)
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
@@ -514,6 +576,7 @@ const handleSubmit = () => {
           dataTableRef.value.refresh()
         }
       } catch (error) {
+        console.error('提交失败:', error)
         ElMessage.error(isEdit.value ? '更新失败' : '创建失败')
       }
     }
@@ -534,6 +597,7 @@ const resetForm = () => {
     startPortId: null,
     endPortId: null,
     transportMode: 'SEA',
+    cargoName: '',
     cargoType: '',
     cargoWeight: null,
     cargoVolume: null,
@@ -554,5 +618,21 @@ onMounted(() => {
 <style scoped>
 .order-list {
   height: 100%;
+  width: 100%;
+}
+
+/* 确保DataTable组件在容器中正确显示 */
+:deep(.data-table) {
+  height: 100%;
+}
+
+/* 优化表格内按钮的间距 */
+:deep(.el-button + .el-button) {
+  margin-left: 8px;
+}
+
+/* 确保固定列的阴影效果 */
+:deep(.el-table__fixed-right) {
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
 }
 </style> 

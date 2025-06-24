@@ -52,10 +52,10 @@ export function getVoyageDetailWithPorts(id) {
 }
 
 // 更新航次状态
-export function updateVoyageStatus(id, data) {
+export function updateVoyageStatus(id, status) {
   return request({
     url: `/voyages/${id}/status`,
-    method: 'put',
-    data
+    method: 'patch',
+    params: { status }
   })
 } 

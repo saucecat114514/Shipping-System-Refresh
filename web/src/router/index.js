@@ -36,6 +36,7 @@ import CustomerVoyageList from '@/views/Customer/CustomerVoyageList.vue'
 import CustomerMyOrders from '@/views/Customer/Order/CustomerMyOrders.vue'
 import CustomerOrderEdit from '@/views/Customer/Order/CustomerOrderEdit.vue'
 
+
 // import QuickTest from '@/views/QuickTest.vue'
 // import DebugPortList from '@/views/DebugPortList.vue'
 // import RoleTest from '@/views/RoleTest.vue'
@@ -155,12 +156,13 @@ const router = createRouter({
           path: '',
           name: 'voyageList',
           component: VoyageList
-        },
-        {
-          path: 'schedule',
-          name: 'voyageSchedule',
-          component: VoyageSchedule
         }
+        // 隐藏航次调度页面路由
+        // {
+        //   path: 'schedule',
+        //   name: 'voyageSchedule',
+        //   component: VoyageSchedule
+        // }
       ]
     },
     {
@@ -224,18 +226,6 @@ const router = createRouter({
     //   ]
     // },
     {
-      path: '/test-connection',
-      component: MainLayout,
-      children: [
-        {
-          path: '',
-          name: 'testConnection',
-          component: TestConnection
-        }
-      ]
-    },
-    // 用户端路由配置
-    {
       path: '/customer',
       component: MainLayout,
       redirect: '/customer/dashboard',
@@ -291,7 +281,6 @@ const router = createRouter({
           component: OrderCreate
         }
       ]
-    }
   ],
 })
 

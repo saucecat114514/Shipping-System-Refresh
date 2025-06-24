@@ -84,14 +84,15 @@ export const adminMenuItems = [
     children: [
       {
         title: '航次列表',
-        path: '/voyages',
+        path: '/voyages'，
         roles: [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
       },
-      {
-        title: '航次调度',
-        path: '/voyages/schedule',
-        roles: [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
-      }
+      // 隐藏航次调度页面
+      // {
+      //   title: '航次调度',
+      //   path: '/voyages/schedule',
+      //   roles: [USER_ROLES.ADMIN, USER_ROLES.DISPATCHER]
+      // }
     ]
   },
   {

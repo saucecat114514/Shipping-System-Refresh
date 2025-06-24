@@ -32,6 +32,7 @@ public class VoyageController {
      * 创建航次
      */
     @Operation(summary = "创建航次", description = "添加新的航次信息")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     @PostMapping
     public Result<Voyage> createVoyage(@Valid @RequestBody VoyageRequest voyageRequest) {
         return voyageService.createVoyage(voyageRequest);
@@ -41,6 +42,7 @@ public class VoyageController {
      * 删除航次
      */
     @Operation(summary = "删除航次", description = "根据ID删除航次")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     @DeleteMapping("/{id}")
     public Result<Void> deleteVoyage(
             @Parameter(description = "航次ID") @PathVariable Long id) {
@@ -51,6 +53,7 @@ public class VoyageController {
      * 更新航次信息
      */
     @Operation(summary = "更新航次", description = "更新航次信息")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     @PutMapping("/{id}")
     public Result<Voyage> updateVoyage(
             @Parameter(description = "航次ID") @PathVariable Long id,
@@ -62,6 +65,7 @@ public class VoyageController {
      * 根据ID查询航次
      */
     @Operation(summary = "查询航次详情", description = "根据ID查询航次详细信息")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     @GetMapping("/{id}")
     public Result<Voyage> getVoyageById(
             @Parameter(description = "航次ID") @PathVariable Long id) {
@@ -92,6 +96,7 @@ public class VoyageController {
      * 分页查询航次列表
      */
     @Operation(summary = "分页查询航次", description = "分页查询航次列表，支持按编号、航线、船舶等筛选")
+    @RequireRole({"ADMIN", "DISPATCHER", "CUSTOMER"})
     @GetMapping
     public Result<PageResult<Voyage>> getVoyagePage(VoyageQueryRequest queryRequest) {
         return voyageService.getVoyagePageWithDetails(queryRequest);
@@ -139,6 +144,7 @@ public class VoyageController {
      * 更新航次状态
      */
     @Operation(summary = "更新航次状态", description = "更新航次的状态（PLANNED/IN_PROGRESS/COMPLETED/CANCELLED）")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     @PatchMapping("/{id}/status")
     public Result<Void> updateVoyageStatus(
             @Parameter(description = "航次ID") @PathVariable Long id,
@@ -150,6 +156,7 @@ public class VoyageController {
      * 自动生成航次
      */
     @Operation(summary = "自动生成航次", description = "基于航线和船舶自动生成航次")
+    @RequireRole({"ADMIN", "DISPATCHER"})
     @PostMapping("/generate")
     public Result<Voyage> generateVoyage(
             @Parameter(description = "航线ID") @RequestParam Long routeId,

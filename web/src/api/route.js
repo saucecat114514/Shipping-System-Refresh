@@ -9,6 +9,14 @@ export function getRouteList(params) {
   })
 }
 
+// 获取所有航线(下拉选择用)
+export function getAllRoutes() {
+  return request({
+    url: '/routes/all',
+    method: 'get'
+  })
+}
+
 // 获取航线详情
 export function getRouteDetail(id) {
   return request({
