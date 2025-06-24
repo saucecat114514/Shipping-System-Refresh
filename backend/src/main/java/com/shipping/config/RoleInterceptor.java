@@ -81,14 +81,14 @@ public class RoleInterceptor implements HandlerInterceptor {
                 return handleUnauthorized(response, "无法获取用户角色信息");
             }
 
-            // 检查角色权限
-            String[] allowedRoles = requireRole.value();
-            if (allowedRoles.length > 0) {
-                List<String> roleList = Arrays.asList(allowedRoles);
-                if (!roleList.contains(userRole)) {
-                    return handleForbidden(response, "权限不足，需要角色：" + String.join(",", allowedRoles));
-                }
+                    // 检查角色权限
+        String[] allowedRoles = requireRole.value();
+        if (allowedRoles.length > 0) {
+            List<String> roleList = Arrays.asList(allowedRoles);
+            if (!roleList.contains(userRole)) {
+                return handleForbidden(response, "权限不足，需要角色：" + String.join(",", allowedRoles));
             }
+        }
 
             // 将用户信息添加到请求属性中
             String username = jwtUtil.getUsernameFromToken(token);
